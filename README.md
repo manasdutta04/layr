@@ -6,7 +6,7 @@ Layr is a VS Code extension that generates comprehensive, actionable project pla
 
 ## Demo Video
 
-[![Layr Demo Video](./layr.png)](https://youtu.be/9xtDDoh-Fg8)
+[Watch the demo video](https://youtu.be/9xtDDoh-Fg8)
 
 
 ## Key Benefits
