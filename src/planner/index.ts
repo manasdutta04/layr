@@ -11,9 +11,7 @@ export class Planner {
   private aiProvider: AIProvider | null = null;
   private ruleGenerator: RuleBasedPlanGenerator;
   private config: LayrConfig;
-  private geminiModel!: string;
-  private openaiModel!: string;
-  private claudeModel!: string;
+  private aiModel!: string;
 
   constructor() {
     // ONLINE ONLY MODE: Disable rule-based generator
@@ -167,8 +165,23 @@ export class Planner {
   private loadConfig(): LayrConfig {
     const config = vscode.workspace.getConfiguration('layr');
     
-    // Load provider selection and unified settings
-    const aiProvider = config.get<AIProviderType>('aiProvider') || 'gemini';
+    // Load unified model setting
+    this.aiModel = config.get<string>('aiModel') || 'gemini-2.5-flash';
+    
+    // Determine provider from model name
+    let aiProvider: AIProviderType = 'gemini';
+    if (this.aiModel.startsWith('gemini')) {
+      aiProvider = 'gemini';
+    } else if (this.aiModel.startsWith('gpt') || this.aiModel.startsWith('o3')) {
+      aiProvider = 'openai';
+    } else if (this.aiModel.startsWith('claude')) {
+      aiProvider = 'claude';
+    } else if (this.aiModel.startsWith('kimi') || 
+               this.aiModel.startsWith('deepseek') || 
+               this.aiModel.startsWith('grok')) {
+      aiProvider = 'openai'; // Default to OpenAI for other models
+    }
+    
     const apiKey = config.get<string>('apiKey') || '';
     const openaiOrganization = config.get<string>('openaiOrganization') || '';
     
@@ -177,25 +190,10 @@ export class Planner {
     const openaiApiKey = aiProvider === 'openai' ? apiKey : process.env.OPENAI_API_KEY || '';
     const claudeApiKey = aiProvider === 'claude' ? apiKey : process.env.CLAUDE_API_KEY || '';
     
-    // Get provider-specific model configurations
-    this.geminiModel = config.get<string>('geminiModel') || 'gemini-2.5-flash';
-    this.openaiModel = config.get<string>('openaiModel') || 'gpt-4';
-    this.claudeModel = config.get<string>('claudeModel') || 'claude-3-sonnet';
-    
-    // Get the current model based on selected provider
-    const currentModel = aiProvider === 'gemini' ? this.geminiModel : 
-                        aiProvider === 'openai' ? this.openaiModel : this.claudeModel;
-    
     console.log('Layr Config Debug:', {
-      selectedProvider: aiProvider,
-      apiKey: apiKey ? '***configured***' : 'not set',
-      currentModel,
-      allModels: { geminiModel: this.geminiModel, openaiModel: this.openaiModel, claudeModel: this.claudeModel },
-      resolvedKeys: {
-        gemini: geminiApiKey ? '***configured***' : 'not set',
-        openai: openaiApiKey ? '***configured***' : 'not set',
-        claude: claudeApiKey ? '***configured***' : 'not set'
-      }
+      selectedModel: this.aiModel,
+      determinedProvider: aiProvider,
+      apiKey: apiKey ? '***configured***' : 'not set'
     });
     
     return {
@@ -203,23 +201,24 @@ export class Planner {
       geminiApiKey, // Keep for legacy support
       gemini: {
         apiKey: geminiApiKey,
-        model: this.geminiModel as 'gemini-2.5-flash' | 'gemini-2.5-pro' | 'gemini-pro' | 'gemini-pro-vision'
+        model: this.aiModel as any
       },
       openai: {
         apiKey: openaiApiKey,
-        model: this.openaiModel as 'gpt-4' | 'gpt-4-turbo' | 'gpt-3.5-turbo',
+        model: this.aiModel as any,
         organization: openaiOrganization
       },
       claude: {
         apiKey: claudeApiKey,
-        model: this.claudeModel as 'claude-3-opus' | 'claude-3-sonnet' | 'claude-3-haiku'
+        model: this.aiModel as any
       }
     };
   }
 
   private initializeAIProvider(): void {
     console.log('Planner.initializeAIProvider: Starting AI provider initialization');
-    console.log('Planner.initializeAIProvider: Selected provider:', this.config.aiProvider);
+    console.log('Planner.initializeAIProvider: Selected model:', this.aiModel);
+    console.log('Planner.initializeAIProvider: Determined provider:', this.config.aiProvider);
     
     try {
       const factory = getAIProviderFactory();
@@ -231,20 +230,20 @@ export class Planner {
         case 'gemini':
           providerConfig = {
             apiKey: this.config.gemini?.apiKey || '',
-            model: this.geminiModel
+            model: this.aiModel
           };
           break;
         case 'openai':
           providerConfig = {
             apiKey: this.config.openai?.apiKey || '',
-            model: this.openaiModel,
+            model: this.aiModel,
             organization: this.config.openai?.organization
           };
           break;
         case 'claude':
           providerConfig = {
             apiKey: this.config.claude?.apiKey || '',
-            model: this.claudeModel
+            model: this.aiModel
           };
           break;
         default:

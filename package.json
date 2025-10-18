@@ -49,67 +49,42 @@
     "configuration": {
       "title": "Layr",
       "properties": {
-        "layr.aiProvider": {
-          "type": "string",
-          "enum": [
-            "gemini",
-            "openai",
-            "claude"
-          ],
-          "default": "gemini",
-          "description": "Select your AI provider",
-          "enumDescriptions": [
-            "Google Gemini AI (Fast & Free)",
-            "OpenAI GPT (Most Popular)",
-            "Anthropic Claude (Advanced Reasoning)"
-          ],
-          "scope": "application",
-          "order": 1
-        },
         "layr.apiKey": {
           "type": "string",
           "default": "",
           "description": "API Key for your selected AI provider",
           "scope": "application",
-          "order": 2
+          "order": 1
         },
-        "layr.geminiModel": {
+        "layr.aiModel": {
           "type": "string",
           "enum": [
             "gemini-2.5-flash",
             "gemini-2.5-pro",
             "gemini-1.5-pro",
             "gemini-1.5-flash",
-            "gemini-pro"
-          ],
-          "default": "gemini-2.5-flash",
-          "description": "Gemini model to use",
-          "scope": "application",
-          "order": 3
-        },
-        "layr.openaiModel": {
-          "type": "string",
-          "enum": [
+            "gemini-pro",
             "gpt-4",
             "gpt-4-turbo",
-            "gpt-3.5-turbo"
-          ],
-          "default": "gpt-4",
-          "description": "OpenAI model to use",
-          "scope": "application",
-          "order": 4
-        },
-        "layr.claudeModel": {
-          "type": "string",
-          "enum": [
+            "gpt-3.5-turbo",
+            "gpt-4o",
+            "gpt-5-medium",
+            "gpt-5-high",
             "claude-3-sonnet",
             "claude-3-opus",
-            "claude-3-haiku"
+            "claude-3-haiku",
+            "claude-3.7-sonnet",
+            "claude-4-sonnet",
+            "kimi-k2-0905",
+            "deepseek-v3.1",
+            "grok-4",
+            "o3"
           ],
-          "default": "claude-3-sonnet",
-          "description": "Claude model to use",
+          "default": "gemini-2.5-flash",
+          "order": 2,
+          "description": "AI model to use",
           "scope": "application",
-          "order": 5
+          "order": 3
         },
         "layr.openaiOrganization": {
           "type": "string",

@@ -64,23 +64,26 @@ export function activate(context: vscode.ExtensionContext) {
   const debugCommand = vscode.commands.registerCommand('layr.debug', async () => {
     const config = vscode.workspace.getConfiguration('layr');
     
-    // Get configuration
-    const selectedProvider = config.get<string>('aiProvider') || 'gemini';
+    // Get unified model configuration
+    const selectedModel = config.get<string>('aiModel') || 'gemini-2.5-flash';
     const apiKey = config.get<string>('apiKey') || '';
+    
+    // Determine provider from model name
+    let selectedProvider = 'gemini';
+    if (selectedModel.startsWith('gemini')) {
+      selectedProvider = 'gemini';
+    } else if (selectedModel.startsWith('gpt') || selectedModel.startsWith('o3')) {
+      selectedProvider = 'openai';
+    } else if (selectedModel.startsWith('claude')) {
+      selectedProvider = 'claude';
+    } else if (selectedModel.startsWith('kimi') || selectedModel.startsWith('deepseek') || selectedModel.startsWith('grok')) {
+      selectedProvider = 'openai'; // Default to OpenAI for other models
+    }
     
     // Get API keys from configuration or environment variables (fallback)
     const geminiApiKey = selectedProvider === 'gemini' ? apiKey : process.env.GEMINI_API_KEY || '';
     const openaiApiKey = selectedProvider === 'openai' ? apiKey : process.env.OPENAI_API_KEY || '';
     const claudeApiKey = selectedProvider === 'claude' ? apiKey : process.env.CLAUDE_API_KEY || '';
-    
-    // Get provider-specific model configurations
-    const geminiModel = config.get<string>('geminiModel') || 'gemini-2.5-flash';
-    const openaiModel = config.get<string>('openaiModel') || 'gpt-4';
-    const claudeModel = config.get<string>('claudeModel') || 'claude-3-sonnet';
-    
-    // Get the current model based on selected provider
-    const currentModel = selectedProvider === 'gemini' ? geminiModel : 
-                        selectedProvider === 'openai' ? openaiModel : claudeModel;
     
     // Test AI provider availability
     let aiProviderStatus = 'unknown';
@@ -100,9 +103,9 @@ export function activate(context: vscode.ExtensionContext) {
     
     const message = `Layr Debug Information
 
-Selected Provider: ${selectedProvider}
+Selected Model: ${selectedModel}
+Determined Provider: ${selectedProvider}
 API Key: ${apiKey ? '***configured***' : 'not set'}
-Current Model: ${currentModel}
 OpenAI Org: ${config.get<string>('openaiOrganization') || 'not set'}
 
 Provider Status:
@@ -115,15 +118,15 @@ Test Result: ${apiTestResult}
 
 Raw Config:
 ${JSON.stringify({
-      selectedProvider,
-      apiKey: apiKey ? '***configured***' : 'not set',
-      currentModel,
-      allModels: { geminiModel, openaiModel, claudeModel }
+      selectedModel,
+      determinedProvider: selectedProvider,
+      apiKey: apiKey ? '***configured***' : 'not set'
     }, null, 2)}`;
     
     vscode.window.showInformationMessage(message);
     console.log('Layr Multi-Provider Debug:', { 
-      selectedProvider,
+      selectedModel,
+      determinedProvider: selectedProvider,
       geminiApiKey: geminiApiKey ? '***configured***' : 'not set',
       openaiApiKey: openaiApiKey ? '***configured***' : 'not set',
       claudeApiKey: claudeApiKey ? '***configured***' : 'not set',
@@ -230,11 +233,8 @@ ${JSON.stringify({
 
   // Listen for configuration changes
   const configChangeListener = vscode.workspace.onDidChangeConfiguration(event => {
-    if (event.affectsConfiguration('layr.aiProvider') ||
+    if (event.affectsConfiguration('layr.aiModel') ||
         event.affectsConfiguration('layr.apiKey') ||
-        event.affectsConfiguration('layr.geminiModel') ||
-        event.affectsConfiguration('layr.openaiModel') ||
-        event.affectsConfiguration('layr.claudeModel') ||
         event.affectsConfiguration('layr.openaiOrganization')) {
       vscode.window.showInformationMessage('Layr: Configuration updated! Changes will take effect on next plan generation.');
     }
