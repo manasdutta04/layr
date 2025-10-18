@@ -1,7 +1,65 @@
 /**
  * Supported AI providers
  */
-export type AIProviderType = 'gemini' | 'openai' | 'claude';
+export type AIProviderType = 'gemini' | 'openai' | 'claude' | 'kimi' | 'deepseek' | 'grok' | 'o3';
+
+/**
+ * Gemini AI configuration
+ */
+export interface GeminiConfig {
+  apiKey: string;
+  model?: 'gemini-2.5-flash' | 'gemini-2.5-pro' | 'gemini-1.5-pro' | 'gemini-1.5-flash' | 'gemini-pro';
+}
+
+/**
+ * OpenAI configuration
+ */
+export interface OpenAIConfig {
+  apiKey: string;
+  model?: 'gpt-4' | 'gpt-4-turbo' | 'gpt-3.5-turbo' | 'gpt-4o' | 'gpt-5-medium' | 'gpt-5-high' | 'kimi-k2-0905' | 'deepseek-v3.1' | 'grok-4' | 'o3';
+  organization?: string;
+}
+
+/**
+ * Claude AI configuration
+ */
+export interface ClaudeConfig {
+  apiKey: string;
+  model?: 'claude-3-sonnet' | 'claude-3-opus' | 'claude-3-haiku' | 'claude-3.7-sonnet' | 'claude-4-sonnet';
+}
+
+/**
+ * Kimi AI configuration (Moonshot AI)
+ */
+export interface KimiConfig {
+  apiKey: string;
+  model?: 'kimi-k2-0905' | 'moonshot-v1-8k' | 'moonshot-v1-32k' | 'moonshot-v1-128k';
+}
+
+/**
+ * DeepSeek AI configuration
+ */
+export interface DeepseekConfig {
+  apiKey: string;
+  model?: 'deepseek-v3.1' | 'deepseek-chat' | 'deepseek-coder';
+}
+
+/**
+ * Grok AI configuration (xAI)
+ */
+export interface GrokConfig {
+  apiKey: string;
+  model?: 'grok-4' | 'grok-3' | 'grok-2';
+}
+
+/**
+ * O3 AI configuration (OpenAI O3)
+ */
+export interface O3Config {
+  apiKey: string;
+  model?: 'o3' | 'o3-mini';
+  organization?: string;
+}
 
 /**
  * Configuration interface for the Layr extension
@@ -15,31 +73,10 @@ export interface LayrConfig {
   gemini?: GeminiConfig;
   openai?: OpenAIConfig;
   claude?: ClaudeConfig;
-}
-
-/**
- * Gemini AI configuration
- */
-export interface GeminiConfig {
-  apiKey: string;
-  model?: 'gemini-2.5-flash' | 'gemini-2.5-pro' | 'gemini-pro' | 'gemini-pro-vision';
-}
-
-/**
- * OpenAI configuration
- */
-export interface OpenAIConfig {
-  apiKey: string;
-  model?: 'gpt-4' | 'gpt-4-turbo' | 'gpt-3.5-turbo';
-  organization?: string;
-}
-
-/**
- * Claude AI configuration
- */
-export interface ClaudeConfig {
-  apiKey: string;
-  model?: 'claude-3-opus' | 'claude-3-sonnet' | 'claude-3-haiku';
+  kimi?: KimiConfig;
+  deepseek?: DeepseekConfig;
+  grok?: GrokConfig;
+  o3?: O3Config;
 }
 
 /**
@@ -139,7 +176,7 @@ export class APIKeyMissingError extends PlanGenerationError {
 
 export class UnsupportedProviderError extends PlanGenerationError {
   constructor(provider: string) {
-    super(`Unsupported AI provider: ${provider}. Supported providers: gemini, openai, claude.`);
+    super(`Unsupported AI provider: ${provider}. Supported providers: gemini, openai, claude, kimi, deepseek, grok, o3.`);
     this.name = 'UnsupportedProviderError';
   }
 }

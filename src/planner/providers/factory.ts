@@ -2,6 +2,10 @@ import { AIProvider, AIProviderFactory, AIProviderType, UnsupportedProviderError
 import { GeminiProvider } from './gemini';
 import { OpenAIProvider } from './openai';
 import { ClaudeProvider } from './claude';
+import { KimiProvider } from './kimi';
+import { DeepseekProvider } from './deepseek';
+import { GrokProvider } from './grok';
+import { O3Provider } from './o3';
 
 /**
  * Factory for creating AI providers
@@ -26,13 +30,21 @@ export class DefaultAIProviderFactory implements AIProviderFactory {
         return new OpenAIProvider(config);
       case 'claude':
         return new ClaudeProvider(config);
+      case 'kimi':
+        return new KimiProvider(config);
+      case 'deepseek':
+        return new DeepseekProvider(config);
+      case 'grok':
+        return new GrokProvider(config);
+      case 'o3':
+        return new O3Provider(config);
       default:
         throw new UnsupportedProviderError(type);
     }
   }
 
   getSupportedProviders(): AIProviderType[] {
-    return ['gemini', 'openai', 'claude'];
+    return ['gemini', 'openai', 'claude', 'kimi', 'deepseek', 'grok', 'o3'];
   }
 }
 

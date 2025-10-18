@@ -154,8 +154,11 @@ CRITICAL: Return ONLY valid JSON. Do not wrap in markdown code blocks. Do not in
   ]
 }`;
 
+      // Get the model name from config or use default
+      const modelName = this.config.model || 'claude-3-sonnet-20240229';
+      
       const requestBody = {
-        model: this.config.model || 'claude-3-sonnet-20240229',
+        model: modelName,
         max_tokens: 4000,
         temperature: 0.7,
         messages: [

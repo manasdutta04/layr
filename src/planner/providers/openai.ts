@@ -19,6 +19,8 @@ export class OpenAIProvider implements AIProvider {
     if (!this.config.apiKey || this.config.apiKey.trim() === '') {
       throw new APIKeyMissingError('openai');
     }
+    
+    // Support for all models including third-party models that use OpenAI-compatible API
 
     try {
       const systemPrompt = `Create a comprehensive and detailed project plan in JSON format for: "${prompt}"
@@ -154,17 +156,43 @@ CRITICAL: Return ONLY valid JSON. Do not wrap in markdown code blocks. Do not in
   ]
 }`;
 
+      // Determine if we're using a third-party model
+      const modelName = this.config.model || 'gpt-4';
+      const isThirdPartyModel = ['kimi-k2-0905', 'deepseek-v3.1', 'grok-4', 'o3'].includes(modelName);
+      
+      // Use appropriate API URL based on model
+      let apiUrl = `${this.baseUrl}/chat/completions`;
+      
+      // Set custom API URLs for third-party models if needed
+      if (isThirdPartyModel) {
+        if (modelName === 'kimi-k2-0905') {
+          apiUrl = 'https://api.moonshot.cn/v1/chat/completions';
+        } else if (modelName === 'deepseek-v3.1') {
+          apiUrl = 'https://api.deepseek.com/v1/chat/completions';
+        } else if (modelName === 'grok-4') {
+          apiUrl = 'https://api.groq.com/openai/v1/chat/completions';
+        } else if (modelName === 'o3') {
+          apiUrl = 'https://api.o3.ai/v1/chat/completions';
+        }
+      }
+      
       const requestBody = {
-        model: this.config.model || 'gpt-4',
+        model: modelName,
         messages: [
           {
-            role: 'user',
+            role: 'system',
             content: systemPrompt
+          },
+          {
+            role: 'user',
+            content: prompt
           }
         ],
         temperature: 0.7,
         max_tokens: 4000,
-        top_p: 0.95
+        top_p: 0.95,
+        frequency_penalty: 0,
+        presence_penalty: 0
       };
 
       const headers: Record<string, string> = {
@@ -176,7 +204,7 @@ CRITICAL: Return ONLY valid JSON. Do not wrap in markdown code blocks. Do not in
         headers['OpenAI-Organization'] = this.config.organization;
       }
 
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers,
         body: JSON.stringify(requestBody)

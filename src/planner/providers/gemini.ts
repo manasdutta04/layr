@@ -28,8 +28,11 @@ export class GeminiProvider implements AIProvider {
     }
 
     try {
+      // Get the model name from config or use default
+      const modelName = this.config.model || 'gemini-pro';
+      
       const model = this.genAI.getGenerativeModel({ 
-        model: this.config.model || 'gemini-pro',
+        model: modelName,
         generationConfig: {
           temperature: 0.7,
           topK: 40,
