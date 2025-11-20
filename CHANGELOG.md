@@ -4,7 +4,7 @@ All notable changes to the "Layr" extension will be documented in this file.
 
 ## [0.2.0] - 2025-11-20
 
-### 🚀 Major Release - Zero-Config AI Planning
+### Major Release - Zero-Config AI Planning
 
 ### Added
 - **Pre-configured Groq Integration**: Extension now comes with Groq AI built-in - no setup required!
