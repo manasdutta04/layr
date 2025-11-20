@@ -15,8 +15,11 @@ tsconfig.json
 .env
 .env.example
 
-# Node modules
-node_modules/**
+# Node modules - exclude dev dependencies but keep runtime deps
+node_modules/**/test/**
+node_modules/**/*.md
+node_modules/**/*.ts
+node_modules/**/.*
 
 # Documentation for development
 *.md

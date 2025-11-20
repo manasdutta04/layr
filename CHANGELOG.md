@@ -2,9 +2,10 @@
 
 All notable changes to the "Layr" extension will be documented in this file.
 
-## [0.2.3] - 2025-11-20
+## [0.2.4] - 2025-11-20
 
 ### Fixed
+- Latest patch update
 - Configured secure Vercel API proxy endpoint for production deployment
 - Extension now fully functional with secure backend API
 
