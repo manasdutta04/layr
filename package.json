@@ -24,17 +24,11 @@
   "activationEvents": [
     "onCommand:layr.createPlan",
     "onCommand:layr.executePlan",
-    "onCommand:layr.debug",
     "onStartupFinished"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
-      {
-        "command": "layr.debug",
-        "title": "Debug API Key",
-        "category": "Layr"
-      },
       {
         "command": "layr.createPlan",
         "title": "Create Plan",

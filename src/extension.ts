@@ -56,42 +56,6 @@ export function activate(context: vscode.ExtensionContext) {
   console.log('Layr: Refreshing planner configuration after .env load');
   planner.refreshConfig();
 
-  // Register debug command to test Groq integration
-  const debugCommand = vscode.commands.registerCommand('layr.debug', async () => {
-    // Test AI provider availability
-    let aiProviderStatus = 'unknown';
-    let apiTestResult = 'not tested';
-    try {
-      const isAvailable = await planner.isAIAvailable();
-      aiProviderStatus = isAvailable ? '✅ Ready' : '❌ Not Available';
-      
-      // Test the API key directly if available
-      if (isAvailable) {
-        const testResult = await planner.testAPIKey();
-        apiTestResult = testResult.success ? '✅ Working perfectly!' : `❌ Error: ${testResult.error}`;
-      }
-    } catch (error) {
-      aiProviderStatus = `❌ Error: ${error}`;
-    }
-    
-    const message = `Layr Status (Pre-configured with Groq)
-
-🤖 AI Provider: Groq (Llama 3.3 70B)
-⚡ Status: ${aiProviderStatus}
-🔑 API Test: ${apiTestResult}
-
-No configuration needed - ready to use!
-Just run "Layr: Create Plan" to get started.`;
-    
-    vscode.window.showInformationMessage(message);
-    console.log('Layr Status:', { 
-      provider: 'Groq',
-      model: 'llama-3.3-70b-versatile',
-      aiProviderStatus,
-      apiTestResult
-    });
-  });
-
   // Register the "Create Plan" command
   const createPlanCommand = vscode.commands.registerCommand('layr.createPlan', async () => {
     try {
@@ -199,7 +163,6 @@ Just run "Layr: Create Plan" to get started.`;
 
   // Add commands to subscriptions for proper cleanup
   context.subscriptions.push(
-    debugCommand,
     createPlanCommand,
     executePlanCommand,
     configChangeListener
@@ -217,23 +180,17 @@ Just run "Layr: Create Plan" to get started.`;
  */
 async function showWelcomeMessage(context: vscode.ExtensionContext) {
   const action = await vscode.window.showInformationMessage(
-    'Welcome to Layr! To get started with AI-powered planning, configure your AI provider and API key.',
-    'Configure Settings',
-    'Use Offline Mode',
+    '🎉 Welcome to Layr! AI-powered project planning is ready to use - no configuration needed!',
+    'Create First Plan',
     'Learn More'
   );
 
   switch (action) {
-    case 'Configure Settings':
-      await vscode.commands.executeCommand('workbench.action.openSettings', 'layr.aiProvider');
-      break;
-    case 'Use Offline Mode':
-      vscode.window.showInformationMessage(
-        'You can use Layr without an API key! It will generate plans using built-in templates. Try the "Layr: Create Plan" command.'
-      );
+    case 'Create First Plan':
+      await vscode.commands.executeCommand('layr.createPlan');
       break;
     case 'Learn More':
-      vscode.env.openExternal(vscode.Uri.parse('https://makersuite.google.com/app/apikey'));
+      vscode.env.openExternal(vscode.Uri.parse('https://github.com/manasdutta04/layr'));
       break;
   }
 
