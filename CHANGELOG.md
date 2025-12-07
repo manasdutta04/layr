@@ -2,6 +2,17 @@
 
 All notable changes to the "Layr" extension will be documented in this file.
 
+## [2.1.1] - 2025-12-07
+
+### Fixed
+- Configuration change listener now correctly watches `layr.planSize` and `layr.planType` settings
+- Removed references to non-existent configuration settings in change detection
+
+### Changed
+- Enhanced README with detailed instructions on how to find Layr settings in VS Code and other IDEs
+- Improved settings documentation with both UI and JSON configuration methods
+- Better user guidance for accessing customization options
+
 ## [2.0.4] - 2025-12-07
 
 ### Changed

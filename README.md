@@ -81,14 +81,33 @@ The extension comes with Groq AI built-in, providing:
 
 While Layr works great out of the box, you can customize your plans:
 
-**Plan Size** (Settings > Layr > Plan Size):
+**How to Access Layr Settings:**
+
+1. **VS Code / Cursor / Windsurf / Antigravity:**
+   - Open Settings: `Ctrl+,` (Windows/Linux) or `Cmd+,` (Mac)
+   - Search for "Layr" in the settings search bar
+   - Or navigate to: **Settings** → Look for **"Layr"** section in the left sidebar
+   - You'll find two settings: **"Layr: Plan Size"** and **"Layr: Plan Type"**
+
+2. **Via Settings JSON:**
+   - Open Command Palette: `Ctrl+Shift+P` (Windows/Linux) or `Cmd+Shift+P` (Mac)
+   - Type "Preferences: Open User Settings (JSON)"
+   - Add or modify:
+     ```json
+     {
+       "layr.planSize": "Normal",
+       "layr.planType": "SaaS"
+     }
+     ```
+
+**Plan Size** (`layr.planSize`):
 - **Concise**: 80-100 lines, quick overviews
 - **Normal**: 180-240 lines, balanced detail (default)
 - **Descriptive**: 300+ lines, comprehensive plans
 
-**Plan Type** (Settings > Layr > Plan Type):
+**Plan Type** (`layr.planType`):
 - **Hobby**: Simple learning projects with basic tools
-- **SaaS**: Multi-tenant apps with billing and scalability
+- **SaaS**: Multi-tenant apps with billing and scalability (default)
 - **Production**: Enterprise-grade with full CI/CD
 - **Enterprise**: Microservices with advanced infrastructure
 - **Prototype**: Rapid MVPs for quick validation

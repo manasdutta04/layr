@@ -331,9 +331,8 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Listen for configuration changes
   const configChangeListener = vscode.workspace.onDidChangeConfiguration(event => {
-    if (event.affectsConfiguration('layr.aiModel') ||
-        event.affectsConfiguration('layr.apiKey') ||
-        event.affectsConfiguration('layr.openaiOrganization')) {
+    if (event.affectsConfiguration('layr.planSize') ||
+        event.affectsConfiguration('layr.planType')) {
       vscode.window.showInformationMessage('Layr: Configuration updated! Changes will take effect on next plan generation.');
     }
   });
