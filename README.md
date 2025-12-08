@@ -17,7 +17,7 @@ Layr comes **pre-configured with Groq AI** - just install and start planning imm
 
 ## Demo Video
 
-[Watch the demo video](https://youtu.be/9xtDDoh-Fg8)
+[Watch the demo video](https://youtu.be/PjBLxArnfu4)
 
 
 ## Key Benefits
