@@ -273,6 +273,10 @@ All provide detailed, customized plans but require your own API keys.
 
 Contributions are welcome! Please see the repository for development setup instructions and contribution guidelines.
 
+## 📘 Documentation
+
+- [FAQ](./FAQ.md)
+
 ## License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
