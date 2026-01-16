@@ -27,7 +27,7 @@ export class GeminiPlanGenerator implements PlanGenerator {
 
   async testApiKey(): Promise<{ success: boolean; error?: string }> {
     if (!this.genAI) {
-      return { success: false, error: 'AI not initialized' };
+      return { success: false, error: 'Gemini API key is not configured. Get one at: https://ai.google.dev/tutorials/rest_quickstart' };
     }
 
     try {
@@ -61,7 +61,18 @@ export class GeminiPlanGenerator implements PlanGenerator {
       const result = await model.generateContent("Hello");
       return { success: true };
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : String(error) };
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      let userMsg = errorMsg;
+      
+      if (errorMsg.includes('API_KEY_INVALID') || errorMsg.includes('authentication')) {
+        userMsg = 'Invalid Gemini API key. Get a valid one at: https://ai.google.dev/tutorials/rest_quickstart';
+      } else if (errorMsg.includes('429') || errorMsg.includes('quota')) {
+        userMsg = 'Gemini API quota exceeded. Check limits at: https://ai.google.dev/pricing';
+      } else if (errorMsg.includes('network') || errorMsg.includes('fetch')) {
+        userMsg = 'Network error connecting to Gemini. Check your internet connection.';
+      }
+      
+      return { success: false, error: userMsg };
     }
   }
 
@@ -151,11 +162,11 @@ Return ONLY valid JSON. No extra text. Keep file structure simple (max 2 levels 
       if (!text || text.length === 0) {
         const finishReason = response.candidates?.[0]?.finishReason;
         if (finishReason === 'SAFETY') {
-          throw new AIServiceError('Content was blocked by safety filters. Please try a different prompt.');
+          throw new AIServiceError('Your request was blocked by Gemini safety filters. Try rephrasing your project description with less sensitive content. Learn more: https://ai.google.dev/safety');
         } else if (finishReason === 'RECITATION') {
-          throw new AIServiceError('Content was blocked due to recitation concerns. Please try a different prompt.');
+          throw new AIServiceError('Content was blocked due to recitation concerns. Try rephrasing your project description differently.');
         } else {
-          throw new AIServiceError(`Empty response from AI service. Finish reason: ${finishReason || 'unknown'}`);
+          throw new AIServiceError(`Empty response from Gemini API. Finish reason: ${finishReason || 'unknown'}. Please try again.`);
         }
       }
 
@@ -193,7 +204,7 @@ Return ONLY valid JSON. No extra text. Keep file structure simple (max 2 levels 
             } catch {
               console.log('GeminiPlanGenerator: No valid JSON found in response');
               console.log('GeminiPlanGenerator: Full response for debugging:', text);
-              throw new AIServiceError('Invalid response format from AI service - no JSON found');
+              throw new AIServiceError('Gemini API returned invalid format. The response could not be parsed as JSON. Try with a simpler project description.');
             }
           }
         }
@@ -229,7 +240,7 @@ Return ONLY valid JSON. No extra text. Keep file structure simple (max 2 levels 
         } catch (repairError) {
           console.log('GeminiPlanGenerator: Failed to repair JSON:', repairError);
           console.log('GeminiPlanGenerator: Original JSON for debugging:', jsonText);
-          throw new AIServiceError('Failed to parse AI response as JSON');
+          throw new AIServiceError('Failed to parse Gemini response format. The API may have returned malformed data. Try again with a clearer project description.');
         }
       }
       
@@ -251,11 +262,15 @@ Return ONLY valid JSON. No extra text. Keep file structure simple (max 2 levels 
       }
       
       if (error instanceof SyntaxError) {
-        throw new AIServiceError('Failed to parse AI response as JSON', error);
+        throw new AIServiceError('Failed to parse Gemini response as JSON. This may indicate a temporary API issue. Try again in a moment.', error);
+      }
+      
+      if (error instanceof AIServiceError) {
+        throw error;
       }
       
       throw new AIServiceError(
-        error instanceof Error ? error.message : 'Unknown error occurred',
+        error instanceof Error ? error.message : 'Unknown error occurred while generating plan',
         error instanceof Error ? error : undefined
       );
     }

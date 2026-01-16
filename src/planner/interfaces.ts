@@ -121,22 +121,83 @@ export class PlanGenerationError extends Error {
 
 export class APIKeyMissingError extends PlanGenerationError {
   constructor(provider?: AIProviderType) {
-    const providerName = provider ? provider.charAt(0).toUpperCase() + provider.slice(1) : 'AI';
-    super(`${providerName} API key is missing. Please configure it in settings or .env file.`);
+    let message = '';
+    
+    if (provider === 'gemini') {
+      message = `Gemini API key is missing or invalid. 
+
+How to fix:
+1. Get your Gemini API key from: https://ai.google.dev/tutorials/rest_quickstart
+2. Set it in VS Code Settings (Ctrl+,) under layr.geminiApiKey or create a .env file
+3. Reload the window (Ctrl+R) to apply changes
+
+Need help? Visit: https://github.com/manasdutta04/layr#setup`;
+    } else if (provider === 'groq') {
+      message = `Groq provider is temporarily unavailable. 
+
+Groq works through a secure backend proxy - no API key configuration needed from you!
+If you see this error, the backend service may be down.
+
+Troubleshooting:
+1. Check your internet connection
+2. Try again in a few moments
+3. Report at: https://github.com/manasdutta04/layr/issues`;
+    } else {
+      message = `AI provider is not configured. 
+
+Please set up an AI provider (Gemini or Groq):
+
+For Gemini:
+1. Get API key from: https://ai.google.dev/tutorials/rest_quickstart
+2. Add to VS Code Settings or .env file
+
+For Groq:
+- Works via secure proxy (no setup needed)
+
+Setup guide: https://github.com/manasdutta04/layr#setup`;
+    }
+    
+    super(message);
     this.name = 'APIKeyMissingError';
   }
 }
 
 export class UnsupportedProviderError extends PlanGenerationError {
   constructor(provider: string) {
-    super(`Unsupported AI provider: ${provider}. Supported providers: gemini, openai, claude, kimi, deepseek, grok, o3.`);
+    const message = `Unsupported AI provider: "${provider}".
+
+Supported providers: gemini, groq
+
+Both providers work seamlessly:
+- Gemini: Requires API key setup (https://ai.google.dev)
+- Groq: Works via secure proxy (zero setup needed)
+
+Setup guide: https://github.com/manasdutta04/layr#setup`;
+    
+    super(message);
     this.name = 'UnsupportedProviderError';
   }
 }
 
 export class AIServiceError extends PlanGenerationError {
   constructor(message: string, cause?: Error) {
-    super(`AI service error: ${message}`, cause);
+    const fullMessage = `AI service error: ${message}
+
+Troubleshooting steps:
+1. Check your internet connection
+2. Ensure sufficient quota/credits if using Gemini
+3. Try with a simpler project description
+4. Wait a few seconds and try again
+
+Common issues:
+- Gemini: Verify API key is valid - https://ai.google.dev
+- Groq: Backend proxy may be temporarily down
+
+For more help:
+- Visit: https://github.com/manasdutta04/layr/issues
+- Check API status at: https://ai.google.dev or https://status.groq.com`;
+    
+    super(fullMessage, cause);
     this.name = 'AIServiceError';
   }
 }

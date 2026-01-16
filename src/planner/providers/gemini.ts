@@ -211,10 +211,22 @@ CRITICAL: Return ONLY valid JSON. Do not wrap in markdown code blocks. Do not in
       if (error instanceof APIKeyMissingError) {
         throw error;
       }
-      throw new AIServiceError(
-        `Failed to generate plan with Gemini: ${error instanceof Error ? error.message : String(error)}`,
-        error instanceof Error ? error : undefined
-      );
+      
+      const errorStr = error instanceof Error ? error.message : String(error);
+      let userFriendlyMsg = `Failed to generate plan with Gemini: ${errorStr}`;
+      
+      // Provide specific guidance based on error type
+      if (errorStr.includes('429') || errorStr.includes('quota')) {
+        userFriendlyMsg = 'Gemini API quota exceeded. Please wait a few minutes and try again. Check limits at: https://ai.google.dev/pricing';
+      } else if (errorStr.includes('401') || errorStr.includes('unauthorized')) {
+        userFriendlyMsg = 'Invalid Gemini API key. Get a new one at: https://ai.google.dev/tutorials/rest_quickstart';
+      } else if (errorStr.includes('network') || errorStr.includes('fetch')) {
+        userFriendlyMsg = 'Network error connecting to Gemini. Check your internet connection and firewall settings.';
+      } else if (errorStr.includes('Safety') || errorStr.includes('safety')) {
+        userFriendlyMsg = 'Your request was blocked by safety filters. Try rephrasing your project description with less sensitive content.';
+      }
+      
+      throw new AIServiceError(userFriendlyMsg, error instanceof Error ? error : undefined);
     }
   }
 
@@ -226,6 +238,10 @@ CRITICAL: Return ONLY valid JSON. Do not wrap in markdown code blocks. Do not in
       return true;
     } catch (error) {
       console.error('GeminiProvider: API key validation failed:', error);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      if (errorMsg.includes('API_KEY_INVALID') || errorMsg.includes('authentication')) {
+        console.error('GeminiProvider: Invalid API key detected. Get one at: https://ai.google.dev/tutorials/rest_quickstart');
+      }
       return false;
     }
   }

@@ -43,7 +43,18 @@ export class Planner {
     
     // REQUIRE AI provider - no offline fallback allowed
     if (!this.aiProvider) {
-      const errorMsg = 'Failed to generate plan: AI API key is missing. Please configure it in settings or .env file.';
+      const errorMsg = `AI provider not initialized. 
+
+Please set up an AI provider:
+- Gemini: Get API key from https://ai.google.dev/tutorials/rest_quickstart
+- Groq: No setup needed (uses secure proxy)
+
+Setup steps:
+1. For Gemini: Add your API key to .env file or VS Code Settings (layr.geminiApiKey)
+2. Reload VS Code (Ctrl+R) to apply changes
+3. Try creating a plan again
+
+Documentation: https://github.com/manasdutta04/layr#setup`;
       console.error('Planner.generatePlan:', errorMsg);
       vscode.window.showErrorMessage(errorMsg);
       throw new APIKeyMissingError();
@@ -53,7 +64,30 @@ export class Planner {
     console.log('Planner.generatePlan: AI provider available:', isAvailable);
     
     if (!isAvailable) {
-      const errorMsg = `ONLINE MODE REQUIRED: AI provider (${this.aiProvider.name}) not available. Please check your API key configuration.`;
+      let errorMsg = '';
+      
+      if (this.aiProvider.type === 'gemini') {
+        errorMsg = `${this.aiProvider.name} is not configured.
+
+Please verify:
+1. Your Gemini API key is valid and not expired
+2. API key is set in VS Code Settings (layr.geminiApiKey) or .env file
+3. You have remaining API quota at https://ai.google.dev
+4. Your internet connection is working
+
+After fixing: Reload VS Code (Ctrl+R) to refresh configuration
+Setup guide: https://github.com/manasdutta04/layr#setup`;
+      } else {
+        errorMsg = `${this.aiProvider.name} provider is temporarily unavailable.
+
+This usually means the backend service is down. Please:
+1. Check your internet connection
+2. Wait a few moments and try again
+3. If the issue persists, check https://status.groq.com
+
+Need help? Visit: https://github.com/manasdutta04/layr/issues`;
+      }
+      
       console.error('Planner.generatePlan:', errorMsg);
       vscode.window.showErrorMessage(errorMsg);
       throw new APIKeyMissingError();
@@ -83,17 +117,28 @@ export class Planner {
     } catch (error) {
       console.error('Planner.generatePlan: AI plan generation failed:', error);
       
-      let errorMessage = 'ONLINE MODE REQUIRED: AI plan generation failed. ';
+      let errorMessage = '';
+      
       if (error instanceof APIKeyMissingError) {
-        errorMessage += `Please configure your ${this.aiProvider?.name || 'AI provider'} API key.`;
+        errorMessage = error.message;
       } else if (error instanceof AIServiceError) {
-        errorMessage += `AI service error: ${error.message}`;
+        errorMessage = error.message;
+      } else if (error instanceof Error) {
+        errorMessage = `Plan generation failed: ${error.message}
+
+Troubleshooting:
+1. Check your internet connection
+2. Verify API key configuration: https://github.com/manasdutta04/layr#setup
+3. Check ${this.aiProvider?.name || 'AI'} service status
+4. Try again with a simpler project description
+
+Need help? Visit: https://github.com/manasdutta04/layr/issues`;
       } else {
-        errorMessage += 'Unexpected error with AI service.';
+        errorMessage = `Unexpected error: ${String(error)}. Please try again or report at: https://github.com/manasdutta04/layr/issues`;
       }
       
       vscode.window.showErrorMessage(errorMessage);
-      throw error; // Re-throw the error instead of falling back to offline mode
+      throw error;
     }
   }
 

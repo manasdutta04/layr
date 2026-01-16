@@ -26,9 +26,9 @@ export class GroqProvider implements AIProvider {
   async generatePlan(prompt: string, options?: any): Promise<string> {
     if (!this.useProxy) {
       throw new AIServiceError(
-        'Layr AI backend is not configured yet. ' +
-        'The extension author needs to deploy the API proxy. ' +
-        'Please check for updates or contact support.'
+        'Layr AI backend proxy is not configured. ' +
+        'The extension author needs to deploy the API. ' +
+        'For documentation, visit: https://github.com/manasdutta04/layr#setup'
       );
     }
 
@@ -636,14 +636,30 @@ CRITICAL REMINDER: Your response MUST be ${planSize === 'Concise' ? 'EXACTLY 80-
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Proxy API Error:', errorText);
-        throw new AIServiceError(`API request failed (${response.status}): ${errorText}`);
+        
+        let userMsg = `API request failed (${response.status}): ${errorText}`;
+        
+        // Provide specific guidance for common HTTP errors
+        if (response.status === 401 || response.status === 403) {
+          userMsg = `Authentication failed (${response.status}). Please check your API key configuration. Docs: https://console.groq.com/keys`;
+        } else if (response.status === 429) {
+          userMsg = `Rate limit exceeded (${response.status}). Please wait a moment and try again. Check limits at: https://console.groq.com/docs/limits`;
+        } else if (response.status === 500 || response.status === 502 || response.status === 503) {
+          userMsg = `Groq API service is temporarily unavailable (${response.status}). Check status: https://status.groq.com. Please try again in a few minutes.`;
+        } else if (response.status === 408 || response.status === 504) {
+          userMsg = `Request timeout (${response.status}). The API took too long to respond. Try again with a simpler prompt.`;
+        } else if (response.status >= 400 && response.status < 500) {
+          userMsg = `Client error (${response.status}): ${errorText}. Check configuration at: https://github.com/manasdutta04/layr#configuration`;
+        }
+        
+        throw new AIServiceError(userMsg);
       }
 
       const data = await response.json() as any;
       const content = data.content || '';
       
       if (!content) {
-        throw new AIServiceError('API returned empty response');
+        throw new AIServiceError('Groq API returned empty response. This might indicate a service issue. Try again in a few moments.');
       }
 
       return content;
@@ -651,8 +667,20 @@ CRITICAL REMINDER: Your response MUST be ${planSize === 'Concise' ? 'EXACTLY 80-
       if (error instanceof AIServiceError) {
         throw error;
       }
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      throw new AIServiceError(`Failed to generate plan: ${errorMessage}`, error as Error);
+      
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      let userMsg = `Failed to generate plan: ${errorMsg}`;
+      
+      // Provide specific guidance for network errors
+      if (errorMsg.includes('fetch') || errorMsg.includes('network') || errorMsg.includes('ECONNREFUSED')) {
+        userMsg = 'Network connection error. Check your internet connection and firewall settings. Docs: https://github.com/manasdutta04/layr#network-issues';
+      } else if (errorMsg.includes('ENOTFOUND') || errorMsg.includes('ETIMEDOUT')) {
+        userMsg = 'Cannot reach the Groq API server. Check your internet connection or try again in a few moments.';
+      } else if (errorMsg.includes('JSON')) {
+        userMsg = 'Invalid response format from API. This is likely a temporary service issue. Try again shortly.';
+      }
+      
+      throw new AIServiceError(userMsg, error as Error);
     }
   }
 
