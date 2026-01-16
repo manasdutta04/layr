@@ -2,7 +2,7 @@
   "name": "layr",
   "displayName": "Layr - AI Planning Layer",
   "description": "AI-powered project planning that just works! Pre-configured with Groq - install and start planning instantly. Zero configuration required.",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "publisher": "ManasDutta",
   "icon": "layr.png",
   "repository": {
@@ -24,6 +24,7 @@
   "activationEvents": [
     "onCommand:layr.createPlan",
     "onCommand:layr.executePlan",
+    "onCommand:layr.exportPlan",
     "onStartupFinished"
   ],
   "main": "./out/extension.js",
@@ -37,6 +38,11 @@
       {
         "command": "layr.executePlan",
         "title": "Execute Plan",
+        "category": "Layr"
+      },
+      {
+        "command": "layr.exportPlan",
+        "title": "Export Plan",
         "category": "Layr"
       }
     ],
@@ -92,6 +98,7 @@
     "publish:all": "npm run publish:vscode && npm run publish:openvsx"
   },
   "devDependencies": {
+    "@types/markdown-it": "^14.1.2",
     "@types/node": "16.x",
     "@types/vscode": "^1.74.0",
     "typescript": "^4.9.4"
@@ -100,6 +107,7 @@
     "@google/generative-ai": "^0.2.1",
     "@types/node-fetch": "^2.6.13",
     "dotenv": "^17.2.3",
+    "markdown-it": "^14.1.0",
     "node-fetch": "^3.3.2"
   }
 }

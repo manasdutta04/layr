@@ -2,6 +2,20 @@
 
 All notable changes to the "Layr" extension will be documented in this file.
 
+## [2.1.3] - 2026-01-16
+
+### Added
+- Plan export functionality to PDF and HTML formats
+- New "Export Plan" command in the command palette
+- Export dialog with format selection options
+- Styled HTML export with proper formatting and structure
+- PDF export with optimized layout and readability
+
+### Changed
+- Enhanced plan management with export capabilities
+- Improved user workflow with additional export options
+
+
 ## [2.1.2] - 2025-12-08
 
 ### Changed
