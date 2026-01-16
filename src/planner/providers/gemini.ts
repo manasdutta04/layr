@@ -230,6 +230,51 @@ CRITICAL: Return ONLY valid JSON. Do not wrap in markdown code blocks. Do not in
     }
   }
 
+  async refineSection(sectionContent: string, refinementPrompt: string, fullContext: string): Promise<string> {
+    if (!this.genAI) {
+      throw new APIKeyMissingError('gemini');
+    }
+
+    try {
+      const modelName = this.config.model || 'gemini-pro';
+      const model = this.genAI.getGenerativeModel({ 
+        model: modelName,
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 8192,
+        }
+      });
+
+      const systemPrompt = `You are an expert software architect. Refine the following section of a project plan based on the user's request.
+      
+Original Section Content:
+"${sectionContent}"
+
+User's Refinement Request:
+"${refinementPrompt}"
+
+Full Plan Context (for reference):
+"${fullContext}"
+
+CRITICAL INSTRUCTIONS:
+1. Return ONLY the refined content for this section.
+2. Maintain the same Markdown heading level as the original section if applicable.
+3. Ensure the refined content fits seamlessly back into the full plan.
+4. Do not include any introductory or concluding text.
+5. If the user asks for more detail, be specific and technical.`;
+
+      const result = await model.generateContent(systemPrompt);
+      const response = await result.response;
+      const text = response.text();
+      return text;
+    } catch (error) {
+      console.error('GeminiProvider.refineSection error:', error);
+      throw new AIServiceError(error instanceof Error ? error.message : String(error));
+    }
+  }
+
   async validateApiKey(apiKey: string): Promise<boolean> {
     try {
       const testAI = new GoogleGenerativeAI(apiKey);

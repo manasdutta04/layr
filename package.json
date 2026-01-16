@@ -44,8 +44,46 @@
         "command": "layr.exportPlan",
         "title": "Export Plan",
         "category": "Layr"
+      },
+      {
+        "command": "layr.refinePlanSection",
+        "title": "Refine Plan Section",
+        "category": "Layr"
+      },
+      {
+        "command": "layr.applyRefinement",
+        "title": "Apply Changes",
+        "category": "Layr",
+        "icon": "$(check)"
+      },
+      {
+        "command": "layr.discardRefinement",
+        "title": "Discard Changes",
+        "category": "Layr",
+        "icon": "$(x)"
       }
     ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "layr.refinePlanSection",
+          "group": "layr@1",
+          "when": "editorHasSelection"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "layr.applyRefinement",
+          "when": "resourceScheme == layr-refine",
+          "group": "navigation"
+        },
+        {
+          "command": "layr.discardRefinement",
+          "when": "resourceScheme == layr-refine",
+          "group": "navigation"
+        }
+      ]
+    },
     "configuration": {
       "title": "Layr",
       "properties": {

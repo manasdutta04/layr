@@ -684,6 +684,56 @@ CRITICAL REMINDER: Your response MUST be ${planSize === 'Concise' ? 'EXACTLY 80-
     }
   }
 
+  async refineSection(sectionContent: string, refinementPrompt: string, fullContext: string): Promise<string> {
+    if (!this.useProxy) {
+      throw new AIServiceError('Layr AI backend proxy is not configured.');
+    }
+
+    try {
+      const systemPrompt = `You are an expert software architect. Refine the following section of a project plan based on the user's request.
+      
+Original Section Content:
+"${sectionContent}"
+
+User's Refinement Request:
+"${refinementPrompt}"
+
+Full Plan Context (for reference):
+"${fullContext}"
+
+CRITICAL INSTRUCTIONS:
+1. Return ONLY the refined content for this section.
+2. Maintain the same Markdown heading level as the original section if applicable.
+3. Ensure the refined content fits seamlessly back into the full plan.
+4. Do not include any introductory or concluding text.
+5. If the user asks for more detail, be specific and technical.`;
+
+      const response = await fetch(this.proxyURL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: {
+            systemPrompt: systemPrompt,
+            userPrompt: refinementPrompt
+          },
+          model: this.model,
+          maxTokens: 4000
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API request failed with status ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json() as any;
+      return data.content || '';
+    } catch (error) {
+      console.error('GroqProvider.refineSection error:', error);
+      throw new AIServiceError(error instanceof Error ? error.message : String(error));
+    }
+  }
+
   async validateApiKey(apiKey: string): Promise<boolean> {
     // With proxy, we don't validate keys client-side
     // Just check if proxy is configured
