@@ -80,24 +80,36 @@ export function activate(context: vscode.ExtensionContext) {
         return; // User cancelled
       }
 
-      // Show progress indicator
+      // Show progress indicator with percentage tracking
       await vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
         title: 'Generating project plan...',
         cancellable: false
       }, async (progress) => {
-        progress.report({ increment: 0, message: 'Analyzing your request...' });
+        // Track cumulative percentage for smooth visual feedback
+        let lastReportedPercentage = 0;
+        
+        const updateProgress = (targetPercentage: number, message: string) => {
+          const increment = targetPercentage - lastReportedPercentage;
+          lastReportedPercentage = targetPercentage;
+          progress.report({ 
+            increment: increment,
+            message: `[${targetPercentage}%] ${message}`
+          });
+        };
         
         try {
-          // Generate the plan
-          const plan = await planner.generatePlan(prompt.trim());
+          // Stage 1: Analyze request
+          updateProgress(15, 'Analyzing your request...');
           
-          progress.report({ increment: 50, message: 'Converting to Markdown...' });
+          // Generate the plan
+          updateProgress(35, 'Connecting to AI provider...');
+          const plan = await planner.generatePlan(prompt.trim());
+          updateProgress(60, 'Formatting plan as Markdown...');
           
           // Convert plan to Markdown
           const markdown = planner.planToMarkdown(plan);
-          
-          progress.report({ increment: 80, message: 'Opening plan in editor...' });
+          updateProgress(80, 'Preparing document...');
           
           // Create a new document with the plan
           const doc = await vscode.workspace.openTextDocument({
@@ -105,13 +117,15 @@ export function activate(context: vscode.ExtensionContext) {
             language: 'markdown'
           });
           
+          updateProgress(90, 'Opening in editor...');
+          
           // Show the document in a new editor
           await vscode.window.showTextDocument(doc, {
             preview: false,
             viewColumn: vscode.ViewColumn.One
           });
           
-          progress.report({ increment: 100, message: 'Plan generated successfully!' });
+          updateProgress(100, 'Plan generated successfully! ✨');
           
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
