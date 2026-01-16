@@ -2,7 +2,7 @@
   "name": "layr",
   "displayName": "Layr - AI Planning Layer",
   "description": "AI-powered project planning that just works! Pre-configured with Groq - install and start planning instantly. Zero configuration required.",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "publisher": "ManasDutta",
   "icon": "layr.png",
   "repository": {
