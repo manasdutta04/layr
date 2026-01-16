@@ -43,18 +43,16 @@ export class Planner {
     
     // REQUIRE AI provider - no offline fallback allowed
     if (!this.aiProvider) {
-      const errorMsg = `AI provider not initialized. 
+      const errorMsg = `AI provider not initialized.
 
-Please set up an AI provider:
-- Gemini: Get API key from https://ai.google.dev/tutorials/rest_quickstart
-- Groq: No setup needed (uses secure proxy)
-
-Setup steps:
-1. For Gemini: Add your API key to .env file or VS Code Settings (layr.geminiApiKey)
+Please configure your AI provider:
+1. Set up your configuration in VS Code Settings or .env file
 2. Reload VS Code (Ctrl+R) to apply changes
 3. Try creating a plan again
 
-Documentation: https://github.com/manasdutta04/layr#setup`;
+For help with setup:
+- Documentation: https://github.com/manasdutta04/layr#setup
+- Troubleshooting: https://github.com/manasdutta04/layr#troubleshooting`;
       console.error('Planner.generatePlan:', errorMsg);
       vscode.window.showErrorMessage(errorMsg);
       throw new APIKeyMissingError();
@@ -64,29 +62,21 @@ Documentation: https://github.com/manasdutta04/layr#setup`;
     console.log('Planner.generatePlan: AI provider available:', isAvailable);
     
     if (!isAvailable) {
-      let errorMsg = '';
-      
-      if (this.aiProvider.type === 'gemini') {
-        errorMsg = `${this.aiProvider.name} is not configured.
+      const errorMsg = `AI provider is currently unavailable.
 
 Please verify:
-1. Your Gemini API key is valid and not expired
-2. API key is set in VS Code Settings (layr.geminiApiKey) or .env file
-3. You have remaining API quota at https://ai.google.dev
-4. Your internet connection is working
+1. Your configuration is correct in VS Code Settings or .env file
+2. Your internet connection is working
+3. Your API credentials are valid
 
-After fixing: Reload VS Code (Ctrl+R) to refresh configuration
-Setup guide: https://github.com/manasdutta04/layr#setup`;
-      } else {
-        errorMsg = `${this.aiProvider.name} provider is temporarily unavailable.
+Next steps:
+1. Check your configuration: https://github.com/manasdutta04/layr#setup
+2. Reload VS Code (Ctrl+R) to refresh
+3. Try again
 
-This usually means the backend service is down. Please:
-1. Check your internet connection
-2. Wait a few moments and try again
-3. If the issue persists, check https://status.groq.com
-
-Need help? Visit: https://github.com/manasdutta04/layr/issues`;
-      }
+If the issue persists:
+- Visit: https://github.com/manasdutta04/layr/issues
+- Check troubleshooting: https://github.com/manasdutta04/layr#troubleshooting`;
       
       console.error('Planner.generatePlan:', errorMsg);
       vscode.window.showErrorMessage(errorMsg);

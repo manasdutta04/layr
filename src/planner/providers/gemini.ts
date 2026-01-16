@@ -202,7 +202,7 @@ CRITICAL: Return ONLY valid JSON. Do not wrap in markdown code blocks. Do not in
       console.log('GeminiProvider: Raw AI response length:', text.length);
 
       if (!text || text.trim() === '') {
-        throw new AIServiceError('Empty response from Gemini API');
+        throw new AIServiceError('AI service returned an empty response. Please try again.');
       }
 
       return text;
@@ -213,17 +213,17 @@ CRITICAL: Return ONLY valid JSON. Do not wrap in markdown code blocks. Do not in
       }
       
       const errorStr = error instanceof Error ? error.message : String(error);
-      let userFriendlyMsg = `Failed to generate plan with Gemini: ${errorStr}`;
+      let userFriendlyMsg = `Failed to generate plan: ${errorStr}`;
       
-      // Provide specific guidance based on error type
+      // Provide generic guidance based on error type
       if (errorStr.includes('429') || errorStr.includes('quota')) {
-        userFriendlyMsg = 'Gemini API quota exceeded. Please wait a few minutes and try again. Check limits at: https://ai.google.dev/pricing';
+        userFriendlyMsg = 'Service quota exceeded. Please wait a few minutes and try again.';
       } else if (errorStr.includes('401') || errorStr.includes('unauthorized')) {
-        userFriendlyMsg = 'Invalid Gemini API key. Get a new one at: https://ai.google.dev/tutorials/rest_quickstart';
+        userFriendlyMsg = 'Authentication failed. Please verify your configuration.';
       } else if (errorStr.includes('network') || errorStr.includes('fetch')) {
-        userFriendlyMsg = 'Network error connecting to Gemini. Check your internet connection and firewall settings.';
+        userFriendlyMsg = 'Network connection error. Check your internet connection and firewall settings.';
       } else if (errorStr.includes('Safety') || errorStr.includes('safety')) {
-        userFriendlyMsg = 'Your request was blocked by safety filters. Try rephrasing your project description with less sensitive content.';
+        userFriendlyMsg = 'Your request was blocked by content policies. Try rephrasing your project description.';
       }
       
       throw new AIServiceError(userFriendlyMsg, error instanceof Error ? error : undefined);
