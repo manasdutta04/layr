@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 import * as fs from 'fs';
+import MarkdownIt from 'markdown-it';
 import { planner } from './planner';
 
 /**
@@ -376,6 +377,215 @@ Troubleshooting: https://github.com/manasdutta04/layr#troubleshooting`;
     }
   });
 
+  // Register the "Export Plan" command
+  const exportPlanCommand = vscode.commands.registerCommand('layr.exportPlan', async () => {
+    try {
+      // Get the active editor
+      const editor = vscode.window.activeTextEditor;
+      
+      if (!editor) {
+        vscode.window.showWarningMessage('No plan file is currently open. Please open a Layr plan (.md file) to export.');
+        return;
+      }
+
+      // Check if it's a markdown file
+      if (editor.document.languageId !== 'markdown') {
+        vscode.window.showWarningMessage('Please open a Markdown (.md) file to export.');
+        return;
+      }
+
+      // Get the document content
+      const content = editor.document.getText();
+
+      // Ask for export format
+      const format = await vscode.window.showQuickPick(['HTML'], {
+        placeHolder: 'Select export format'
+      });
+
+      if (!format) {
+        return;
+      }
+
+      // Show progress
+      await vscode.window.withProgress({
+        location: vscode.ProgressLocation.Notification,
+        title: `Exporting plan to ${format}...`,
+        cancellable: false
+      }, async (progress) => {
+        try {
+          const md = new MarkdownIt({
+            html: true,
+            linkify: true,
+            typographer: true
+          });
+
+          const htmlContent = md.render(content);
+          
+          // Apply styling
+          const styledHtml = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Layr Project Plan</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+            background-color: #f0f2f5;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 3rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        }
+        h1, h2, h3, h4, h5, h6 {
+            color: #1a202c;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+        h1 { 
+            font-size: 2.5rem;
+            border-bottom: 3px solid #4a90e2; 
+            padding-bottom: 0.5rem;
+            color: #2d3748;
+        }
+        h2 { 
+            font-size: 1.8rem;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 0.3rem;
+            margin-top: 2.5rem;
+        }
+        h3 { font-size: 1.4rem; color: #4a5568; }
+        p { margin-bottom: 1.2rem; }
+        code {
+            background-color: #edf2f7;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.9em;
+            color: #e53e3e;
+        }
+        pre {
+            background-color: #1a202c;
+            color: #e2e8f0;
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1.5rem 0;
+            line-height: 1.45;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            color: inherit;
+            font-size: 0.85em;
+        }
+        blockquote {
+            border-left: 5px solid #4a90e2;
+            margin: 1.5rem 0;
+            padding: 0.5rem 0 0.5rem 1.5rem;
+            font-style: italic;
+            color: #4a5568;
+            background-color: #f7fafc;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 2rem 0;
+        }
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 1rem;
+            text-align: left;
+        }
+        th { 
+            background-color: #edf2f7;
+            font-weight: 600;
+        }
+        tr:nth-child(even) { background-color: #f8fafc; }
+        ul, ol { margin-bottom: 1.2rem; padding-left: 1.5rem; }
+        li { margin-bottom: 0.5rem; }
+        .footer {
+            margin-top: 4rem;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #718096;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 2rem;
+        }
+        @media print {
+            body { background-color: white; padding: 0; }
+            .container { box-shadow: none; padding: 0; }
+            pre { white-space: pre-wrap; word-wrap: break-word; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        ${htmlContent}
+        <div class="footer">
+            Generated by <a href="https://github.com/manasdutta04/layr" target="_blank" style="color: #4a90e2; text-decoration: none; font-weight: 600;">Layr - AI Planning Layer</a>
+        </div>
+    </div>
+</body>
+</html>
+          `;
+
+          // Determine save path
+          let savePath: string;
+          if (editor.document.isUntitled) {
+            // If unsaved, ask for directory
+            const uri = await vscode.window.showSaveDialog({
+              defaultUri: vscode.Uri.file('project-plan.html'),
+              filters: { 'HTML Files': ['html'] }
+            });
+            if (!uri) return;
+            savePath = uri.fsPath;
+          } else {
+            // Save in same directory
+            const sourcePath = editor.document.uri.fsPath;
+            savePath = sourcePath.replace(/\.md$/, '') + '.html';
+            
+            // If it already exists, confirm overwrite
+            if (fs.existsSync(savePath)) {
+              const overwrite = await vscode.window.showWarningMessage(
+                `File ${path.basename(savePath)} already exists. Overwrite?`,
+                'Yes', 'No'
+              );
+              if (overwrite !== 'Yes') return;
+            }
+          }
+
+          fs.writeFileSync(savePath, styledHtml);
+          
+          vscode.window.showInformationMessage(`Plan exported successfully to ${path.basename(savePath)}`, 'Open File').then(action => {
+            if (action === 'Open File') {
+              vscode.env.openExternal(vscode.Uri.file(savePath));
+            }
+          });
+
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+          vscode.window.showErrorMessage(`Failed to export plan: ${errorMessage}`);
+          console.error('Export error:', error);
+        }
+      });
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      vscode.window.showErrorMessage(`Error exporting plan: ${errorMessage}`);
+      console.error('Export plan command error:', error);
+    }
+  });
+
   // Listen for configuration changes
   const configChangeListener = vscode.workspace.onDidChangeConfiguration(event => {
     if (event.affectsConfiguration('layr.planSize') ||
@@ -389,6 +599,7 @@ Troubleshooting: https://github.com/manasdutta04/layr#troubleshooting`;
   context.subscriptions.push(
     createPlanCommand,
     executePlanCommand,
+    exportPlanCommand,
     configChangeListener
   );
 
