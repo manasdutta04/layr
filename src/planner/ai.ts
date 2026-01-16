@@ -27,7 +27,7 @@ export class GeminiPlanGenerator implements PlanGenerator {
 
   async testApiKey(): Promise<{ success: boolean; error?: string }> {
     if (!this.genAI) {
-      return { success: false, error: 'Gemini API key is not configured. Get one at: https://ai.google.dev/tutorials/rest_quickstart' };
+      return { success: false, error: 'AI provider is not configured. Please verify your configuration settings.' };
     }
 
     try {
@@ -65,11 +65,11 @@ export class GeminiPlanGenerator implements PlanGenerator {
       let userMsg = errorMsg;
       
       if (errorMsg.includes('API_KEY_INVALID') || errorMsg.includes('authentication')) {
-        userMsg = 'Invalid Gemini API key. Get a valid one at: https://ai.google.dev/tutorials/rest_quickstart';
+        userMsg = 'Authentication failed. Please verify your configuration settings.';
       } else if (errorMsg.includes('429') || errorMsg.includes('quota')) {
-        userMsg = 'Gemini API quota exceeded. Check limits at: https://ai.google.dev/pricing';
+        userMsg = 'Service quota exceeded. Please wait a few minutes before trying again.';
       } else if (errorMsg.includes('network') || errorMsg.includes('fetch')) {
-        userMsg = 'Network error connecting to Gemini. Check your internet connection.';
+        userMsg = 'Network error. Check your internet connection and firewall settings.';
       }
       
       return { success: false, error: userMsg };
@@ -162,11 +162,11 @@ Return ONLY valid JSON. No extra text. Keep file structure simple (max 2 levels 
       if (!text || text.length === 0) {
         const finishReason = response.candidates?.[0]?.finishReason;
         if (finishReason === 'SAFETY') {
-          throw new AIServiceError('Your request was blocked by Gemini safety filters. Try rephrasing your project description with less sensitive content. Learn more: https://ai.google.dev/safety');
+          throw new AIServiceError('Your request was blocked by content policies. Try rephrasing your project description.');
         } else if (finishReason === 'RECITATION') {
-          throw new AIServiceError('Content was blocked due to recitation concerns. Try rephrasing your project description differently.');
+          throw new AIServiceError('Content was blocked. Try rephrasing your project description differently.');
         } else {
-          throw new AIServiceError(`Empty response from Gemini API. Finish reason: ${finishReason || 'unknown'}. Please try again.`);
+          throw new AIServiceError(`AI service returned an empty response. Please try again.`);
         }
       }
 
@@ -204,7 +204,7 @@ Return ONLY valid JSON. No extra text. Keep file structure simple (max 2 levels 
             } catch {
               console.log('GeminiPlanGenerator: No valid JSON found in response');
               console.log('GeminiPlanGenerator: Full response for debugging:', text);
-              throw new AIServiceError('Gemini API returned invalid format. The response could not be parsed as JSON. Try with a simpler project description.');
+              throw new AIServiceError('AI service returned an invalid response format. Try with a simpler project description.');
             }
           }
         }
@@ -240,7 +240,7 @@ Return ONLY valid JSON. No extra text. Keep file structure simple (max 2 levels 
         } catch (repairError) {
           console.log('GeminiPlanGenerator: Failed to repair JSON:', repairError);
           console.log('GeminiPlanGenerator: Original JSON for debugging:', jsonText);
-          throw new AIServiceError('Failed to parse Gemini response format. The API may have returned malformed data. Try again with a clearer project description.');
+          throw new AIServiceError('Failed to parse AI response format. The service may have returned malformed data. Try again with a clearer project description.');
         }
       }
       
@@ -262,7 +262,7 @@ Return ONLY valid JSON. No extra text. Keep file structure simple (max 2 levels 
       }
       
       if (error instanceof SyntaxError) {
-        throw new AIServiceError('Failed to parse Gemini response as JSON. This may indicate a temporary API issue. Try again in a moment.', error);
+        throw new AIServiceError('Failed to parse AI response. This may indicate a temporary service issue. Try again in a moment.', error);
       }
       
       if (error instanceof AIServiceError) {

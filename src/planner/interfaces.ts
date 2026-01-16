@@ -121,41 +121,17 @@ export class PlanGenerationError extends Error {
 
 export class APIKeyMissingError extends PlanGenerationError {
   constructor(provider?: AIProviderType) {
-    let message = '';
-    
-    if (provider === 'gemini') {
-      message = `Gemini API key is missing or invalid. 
+    const message = `AI provider is not configured or unavailable.
 
 How to fix:
-1. Get your Gemini API key from: https://ai.google.dev/tutorials/rest_quickstart
-2. Set it in VS Code Settings (Ctrl+,) under layr.geminiApiKey or create a .env file
-3. Reload the window (Ctrl+R) to apply changes
+1. Verify your configuration in VS Code Settings or .env file
+2. Check your internet connection
+3. Ensure you have the necessary API credentials
+4. Reload the window (Ctrl+R) to apply changes
 
-Need help? Visit: https://github.com/manasdutta04/layr#setup`;
-    } else if (provider === 'groq') {
-      message = `Groq provider is temporarily unavailable. 
-
-Groq works through a secure backend proxy - no API key configuration needed from you!
-If you see this error, the backend service may be down.
-
-Troubleshooting:
-1. Check your internet connection
-2. Try again in a few moments
-3. Report at: https://github.com/manasdutta04/layr/issues`;
-    } else {
-      message = `AI provider is not configured. 
-
-Please set up an AI provider (Gemini or Groq):
-
-For Gemini:
-1. Get API key from: https://ai.google.dev/tutorials/rest_quickstart
-2. Add to VS Code Settings or .env file
-
-For Groq:
-- Works via secure proxy (no setup needed)
-
-Setup guide: https://github.com/manasdutta04/layr#setup`;
-    }
+For detailed setup instructions:
+- Visit: https://github.com/manasdutta04/layr#setup
+- Check documentation: https://github.com/manasdutta04/layr`;
     
     super(message);
     this.name = 'APIKeyMissingError';
@@ -185,17 +161,15 @@ export class AIServiceError extends PlanGenerationError {
 
 Troubleshooting steps:
 1. Check your internet connection
-2. Ensure sufficient quota/credits if using Gemini
-3. Try with a simpler project description
-4. Wait a few seconds and try again
+2. Verify your configuration settings
+3. Ensure you have sufficient quota or credits
+4. Try again with a simpler project description
+5. Wait a few moments and retry
 
-Common issues:
-- Gemini: Verify API key is valid - https://ai.google.dev
-- Groq: Backend proxy may be temporarily down
-
-For more help:
-- Visit: https://github.com/manasdutta04/layr/issues
-- Check API status at: https://ai.google.dev or https://status.groq.com`;
+If the issue persists:
+- Review your configuration: https://github.com/manasdutta04/layr#setup
+- Report the issue: https://github.com/manasdutta04/layr/issues
+- Check documentation for troubleshooting: https://github.com/manasdutta04/layr#troubleshooting`;
     
     super(fullMessage, cause);
     this.name = 'AIServiceError';
