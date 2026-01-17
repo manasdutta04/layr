@@ -204,6 +204,27 @@ Need help? Visit: https://github.com/manasdutta04/layr/issues`;
   }
 
   /**
+   * Refine a specific section of the plan
+   */
+  async refineSection(sectionContent: string, refinementPrompt: string, fullContext: string): Promise<string> {
+    if (!this.aiProvider) {
+      throw new APIKeyMissingError();
+    }
+
+    const isAvailable = await this.aiProvider.isAvailable();
+    if (!isAvailable) {
+      throw new APIKeyMissingError();
+    }
+
+    try {
+      return await this.aiProvider.refineSection(sectionContent, refinementPrompt, fullContext);
+    } catch (error) {
+      console.error('Planner.refineSection error:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Refresh configuration and reinitialize AI provider
    */
   refreshConfig(): void {

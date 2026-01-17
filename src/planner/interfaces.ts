@@ -76,6 +76,7 @@ export interface AIProvider {
   readonly type: AIProviderType;
   
   generatePlan(prompt: string, options?: any): Promise<string>;
+  refineSection(sectionContent: string, refinementPrompt: string, fullContext: string): Promise<string>;
   validateApiKey(apiKey: string): Promise<boolean>;
   getSupportedModels(): string[];
   isAvailable(): Promise<boolean>;

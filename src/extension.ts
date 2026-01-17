@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import MarkdownIt from 'markdown-it';
 import { planner } from './planner';
+import { PlanRefiner } from './planner/refiner';
 
 /**
  * This method is called when the extension is activated
@@ -57,6 +58,51 @@ export function activate(context: vscode.ExtensionContext) {
   // Refresh planner configuration after .env is loaded
   console.log('Layr: Refreshing planner configuration after .env load');
   planner.refreshConfig();
+
+  // Register the "Refine Plan Section" command
+  const refinePlanSectionCommand = vscode.commands.registerCommand('layr.refinePlanSection', async () => {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      vscode.window.showErrorMessage('No active editor found');
+      return;
+    }
+
+    const document = editor.document;
+    const selection = editor.selection;
+
+    // Identify section
+    const section = PlanRefiner.getSectionAtSelection(document, selection);
+    if (!section) {
+      vscode.window.showErrorMessage('Could not identify a plan section at the current selection');
+      return;
+    }
+
+    // Prompt for refinement
+    const refinementPrompt = await vscode.window.showInputBox({
+      prompt: `How would you like to refine the "${section.title}" section?`,
+      placeHolder: 'e.g., Add more detail to the database schema, include security considerations...',
+      ignoreFocusOut: true
+    });
+
+    if (!refinementPrompt) {
+      return; // User cancelled
+    }
+
+    // Show progress
+    await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: `Refining section: ${section.title}...`,
+      cancellable: false
+    }, async (progress) => {
+      progress.report({ message: 'AI is thinking...' });
+      
+      const refinedContent = await PlanRefiner.refine(document, section, refinementPrompt);
+      
+      if (refinedContent) {
+        await PlanRefiner.showDiffAndApply(document, section, refinedContent);
+      }
+    });
+  });
 
   // Register the "Create Plan" command
   const createPlanCommand = vscode.commands.registerCommand('layr.createPlan', async () => {
@@ -600,7 +646,21 @@ Troubleshooting: https://github.com/manasdutta04/layr#troubleshooting`;
     createPlanCommand,
     executePlanCommand,
     exportPlanCommand,
-    configChangeListener
+    refinePlanSectionCommand,
+    configChangeListener,
+    vscode.commands.registerCommand('layr.applyRefinement', async (uri: vscode.Uri) => {
+      // If uri is not provided, try to get it from the active editor
+      const targetUri = uri || vscode.window.activeTextEditor?.document.uri;
+      if (targetUri) {
+        await PlanRefiner.applyActiveRefinement(targetUri);
+      }
+    }),
+    vscode.commands.registerCommand('layr.discardRefinement', async (uri: vscode.Uri) => {
+      const targetUri = uri || vscode.window.activeTextEditor?.document.uri;
+      if (targetUri) {
+        await PlanRefiner.discardActiveRefinement(targetUri);
+      }
+    })
   );
 
   // Show welcome message on first activation
