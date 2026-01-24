@@ -61,6 +61,10 @@
         "title": "Discard Changes",
         "category": "Layr",
         "icon": "$(x)"
+      },
+      {
+        "command": "layr.estimateCost",
+        "title": "Layr: Estimate Cloud Costs"
       }
     ],
     "menus": {
