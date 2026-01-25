@@ -28,9 +28,17 @@ Layr comes **pre-configured with Groq AI** - just install and start planning imm
 
 **Intelligent Planning** : Leverages advanced LLMs (Llama 3.3) to create detailed, context-aware project plans.
 
+**Visual Progress Tracking** : Real-time progress indicators show generation status with percentage completion.
+
+**Iterative Refinement** : Select any section and refine it with AI using side-by-side diff view.
+
+**Export & Share** : Export plans to PDF or styled HTML formats for presentations and documentation.
+
 **Seamless Integration** : Native VS Code integration through Command Palette with instant access to planning tools.
 
 **Flexible Output** : Generates editable Markdown documents that you can customize and reference throughout development.
+
+**Enhanced Error Handling** : Helpful error messages with troubleshooting guidance for quick resolution.
 
 **Multi-Provider Support** : Optional support for Gemini, OpenAI, and Claude if you prefer other AI providers.
 
@@ -145,8 +153,9 @@ See `GROQ_SETUP.md` for detailed instructions.
    - Example: "A React todo app with user authentication and real-time updates"
    - Example: "A REST API for a blog platform with user management"
    - Example: "A Python data analysis script for sales reporting"
-4. **Review Generated Plan** : The extension will create a new Markdown file with your project plan
-5. **Customize as Needed** : Edit the generated plan to match your specific requirements
+4. **Watch Progress** : Track real-time progress with visual percentage indicators
+5. **Review Generated Plan** : The extension will create a new Markdown file with your project plan
+6. **Customize as Needed** : Edit the generated plan to match your specific requirements
 
 ### Executing a Plan
 
@@ -169,6 +178,40 @@ See `GROQ_SETUP.md` for detailed instructions.
 - Automatic detection of AI assistants across different IDEs
 - Universal clipboard fallback for any IDE
 
+### Refining Plan Sections
+
+1. **Select Text** : Highlight any section of your plan that needs improvement
+2. **Right-click** : Open the context menu
+3. **Choose "Refine Plan Section"** : Or use Command Palette (`Ctrl+Shift+P` → "Layr: Refine Plan Section")
+4. **Enter Refinement Prompt** : Describe how you want to improve the selected section
+   - Example: "Add more details about error handling"
+   - Example: "Include security best practices"
+   - Example: "Simplify this section for beginners"
+5. **Review Changes** : The refined section opens in a side-by-side diff view
+6. **Apply or Discard** : Click the checkmark (✓) to apply changes or X to discard
+
+**Benefits:**
+- Iteratively improve your plans without regenerating from scratch
+- Fine-tune specific sections while keeping the rest intact
+- Experiment with different approaches using the diff view
+- Maintain version control with side-by-side comparison
+
+### Exporting Plans
+
+1. **Open a Layr Plan** : Have your generated plan open in the editor
+2. **Open Command Palette** : Press `Ctrl+Shift+P` (Windows/Linux) or `Cmd+Shift+P` (Mac)
+3. **Run Command** : Type "Layr: Export Plan" and press Enter
+4. **Choose Format** : Select either PDF or HTML
+   - **PDF**: Perfect for sharing, presenting, or archiving
+   - **HTML**: Styled, interactive format for web viewing
+5. **Save Location** : Choose where to save your exported plan
+
+**Export Features:**
+- Professional formatting with proper styling
+- Preserves all markdown formatting and structure
+- Optimized layout for readability
+- Great for documentation and presentations
+
 ### Best Practices for Prompts
 
 **Be Specific** : Include technology preferences, key features, and constraints
@@ -185,10 +228,14 @@ See `GROQ_SETUP.md` for detailed instructions.
 
 ## Available Commands
 
-| Command | Description | Shortcut |
-|---------|-------------|----------|
-| `Layr: Create Plan` | Generate a new project plan from description | None |
-| `Layr: Execute Plan` | Send plan to AI assistant for implementation | None |
+| Command | Description | Access |
+|---------|-------------|--------|
+| `Layr: Create Plan` | Generate a new project plan from description | Command Palette |
+| `Layr: Execute Plan` | Send plan to AI assistant for implementation | Command Palette |
+| `Layr: Export Plan` | Export plan to PDF or HTML format | Command Palette |
+| `Layr: Refine Plan Section` | Improve selected text with AI refinement | Right-click menu / Command Palette |
+| `Apply Changes` | Accept refined changes in diff view | Editor toolbar (✓) |
+| `Discard Changes` | Reject refined changes in diff view | Editor toolbar (✗) |
 
 ## Plan Output Structure
 
