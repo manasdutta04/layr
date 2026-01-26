@@ -64,7 +64,7 @@ export function activate(context: vscode.ExtensionContext) {
   planner.refreshConfig();
 
   // Initialize Version Control Components
-  const versionManager = new VersionManager(context);
+  const versionManager = new VersionManager();
   const planDiffProvider = new PlanDiffProvider(versionManager);
 
   // Register the Diff Provider
@@ -196,11 +196,14 @@ export function activate(context: vscode.ExtensionContext) {
 
           updateProgress(95, 'Saving version history...');
 
+          // Get the actual model name from planner config
+          const modelName = (planner as any).aiModel || 'groq-llama-3.3-70b-versatile';
+
           // Save the initial version
           await versionManager.saveVersion(plan, {
             description: 'Initial Plan Generation',
             prompt: prompt.trim(),
-            model: 'groq-llama-3.3-70b-versatile',
+            model: modelName,
             versionLabel: 'v1'
           });
 
@@ -713,9 +716,24 @@ Troubleshooting: https://github.com/manasdutta04/layr#troubleshooting`;
         if (doc) {
           // Save version after refinement
           const content = doc.getText();
+
+          // Parse the markdown content to extract title and structure
+          const lines = content.split('\n');
+          let title = 'Refined Plan';
+
+          // Extract title from first heading
+          for (const line of lines) {
+            const headingMatch = line.match(/^#\s+(.+)$/);
+            if (headingMatch) {
+              title = headingMatch[1].trim();
+              break;
+            }
+          }
+
+          // Create a proper plan object with the markdown content
           const plan = {
-            title: 'Refined Plan', // We might want to parse title from content
-            overview: content,
+            title: title,
+            overview: content, // Store full markdown in overview
             requirements: [],
             fileStructure: [],
             nextSteps: [],
@@ -723,10 +741,14 @@ Troubleshooting: https://github.com/manasdutta04/layr#troubleshooting`;
             generatedBy: 'ai' as const
           };
 
+          // Get the actual model name from planner config
+          const modelName = (planner as any).aiModel || 'groq-llama-3.3-70b-versatile';
+
           await versionManager.saveVersion(plan, {
             description: 'Plan User Refinement',
             versionLabel: 'refined',
-            prompt: 'Refinement applied'
+            prompt: 'Refinement applied',
+            model: modelName
           });
         }
       }

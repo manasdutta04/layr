@@ -2,10 +2,11 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import { randomUUID } from 'crypto';
 import { ProjectPlan } from '../planner/interfaces';
 
 export interface PlanVersion {
-    id: string; // timestamp-based unique id
+    id: string; // UUID-based unique id
     timestamp: number;
     plan: ProjectPlan;
     metadata: {
@@ -17,22 +18,28 @@ export interface PlanVersion {
 }
 
 export class VersionManager {
-    private context: vscode.ExtensionContext;
     private historyDir: string;
 
-    constructor(context: vscode.ExtensionContext) {
-        this.context = context;
+    constructor() {
         const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
         if (!workspacePath) {
             this.historyDir = '';
+            vscode.window.showWarningMessage(
+                'Layr: No workspace folder found. Plan version history will not be saved until you open a workspace folder.',
+                'Learn More'
+            ).then(action => {
+                if (action === 'Learn More') {
+                    vscode.env.openExternal(vscode.Uri.parse('https://code.visualstudio.com/docs/editor/workspaces'));
+                }
+            });
         } else {
             this.historyDir = path.join(workspacePath, '.layr', 'history');
         }
     }
 
-    private ensureHistoryDir() {
+    private async ensureHistoryDir() {
         if (this.historyDir && !fs.existsSync(this.historyDir)) {
-            fs.mkdirSync(this.historyDir, { recursive: true });
+            await fs.promises.mkdir(this.historyDir, { recursive: true });
         }
     }
 
@@ -40,6 +47,15 @@ export class VersionManager {
         const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
         if (workspacePath) {
             this.historyDir = path.join(workspacePath, '.layr', 'history');
+        } else {
+            vscode.window.showWarningMessage(
+                'Layr: No workspace folder found. Plan version history will not be saved.',
+                'Open Folder'
+            ).then(action => {
+                if (action === 'Open Folder') {
+                    vscode.commands.executeCommand('vscode.openFolder');
+                }
+            });
         }
     }
 
@@ -50,10 +66,10 @@ export class VersionManager {
             if (!this.historyDir) return null;
         }
 
-        this.ensureHistoryDir();
+        await this.ensureHistoryDir();
 
         const timestamp = Date.now();
-        const id = `${timestamp}`;
+        const id = randomUUID(); // Use UUID to prevent race conditions
         const version: PlanVersion = {
             id,
             timestamp,
@@ -65,6 +81,11 @@ export class VersionManager {
 
         try {
             await fs.promises.writeFile(versionFile, JSON.stringify(version, null, 2));
+
+            // Automatically cleanup old versions to prevent unlimited growth
+            // Keep only the 50 most recent versions
+            await this.cleanupOldVersions(50);
+
             return id;
         } catch (error) {
             console.error('Failed to save plan version:', error);
@@ -113,6 +134,64 @@ export class VersionManager {
         } catch (error) {
             console.error('Failed to read version:', error);
             return null;
+        }
+    }
+
+    /**
+     * Clean up old versions, keeping only the most recent ones
+     * @param keepCount Number of versions to keep (default: 50)
+     */
+    public async cleanupOldVersions(keepCount: number = 50): Promise<number> {
+        if (!this.historyDir || !fs.existsSync(this.historyDir)) {
+            return 0;
+        }
+
+        try {
+            const versions = await this.getVersions();
+
+            if (versions.length <= keepCount) {
+                return 0; // Nothing to clean up
+            }
+
+            // Sort by timestamp descending (newest first)
+            const sortedVersions = versions.sort((a, b) => b.timestamp - a.timestamp);
+
+            // Get versions to delete (older than keepCount)
+            const versionsToDelete = sortedVersions.slice(keepCount);
+
+            let deletedCount = 0;
+            for (const version of versionsToDelete) {
+                const versionFile = path.join(this.historyDir, `${version.id}.json`);
+                try {
+                    await fs.promises.unlink(versionFile);
+                    deletedCount++;
+                } catch (error) {
+                    console.error(`Failed to delete version ${version.id}:`, error);
+                }
+            }
+
+            return deletedCount;
+        } catch (error) {
+            console.error('Failed to cleanup old versions:', error);
+            return 0;
+        }
+    }
+
+    /**
+     * Delete a specific version by ID
+     */
+    public async deleteVersion(id: string): Promise<boolean> {
+        if (!this.historyDir) return false;
+
+        const versionFile = path.join(this.historyDir, `${id}.json`);
+        if (!fs.existsSync(versionFile)) return false;
+
+        try {
+            await fs.promises.unlink(versionFile);
+            return true;
+        } catch (error) {
+            console.error('Failed to delete version:', error);
+            return false;
         }
     }
 }

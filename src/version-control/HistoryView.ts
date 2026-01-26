@@ -135,22 +135,36 @@ export class HistoryView {
     }
 
     private _getHtmlForWebview(versions: PlanVersion[]) {
+        // Helper function to escape HTML and prevent XSS
+        const escapeHtml = (unsafe: string): string => {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        };
+
         // Simple HTML list
         const rows = versions.map(v => {
             const date = new Date(v.timestamp).toLocaleString();
+            const escapedDescription = escapeHtml(v.metadata.description);
+            const escapedModel = escapeHtml(v.metadata.model || 'N/A');
+            const escapedId = escapeHtml(v.id);
+
             return `
             <div class="version-item">
                 <div class="version-header">
-                    <span class="version-id">#${shortId(v.id)}</span>
-                    <span class="version-date">${date}</span>
+                    <span class="version-id">#${escapeHtml(shortId(v.id))}</span>
+                    <span class="version-date">${escapeHtml(date)}</span>
                 </div>
                 <div class="version-meta">
-                    <strong>${v.metadata.description}</strong><br/>
-                    <small>Model: ${v.metadata.model || 'N/A'}</small>
+                    <strong>${escapedDescription}</strong><br/>
+                    <small>Model: ${escapedModel}</small>
                 </div>
                 <div class="version-actions">
-                     <button onclick="compareWithCurrent('${v.id}')" title="Compare with active file">Diff with Active</button>
-                     <button onclick="restore('${v.id}')" title="Restore content">Restore</button>
+                     <button onclick="compareWithCurrent('${escapedId}')" title="Compare with active file">Diff with Active</button>
+                     <button onclick="restore('${escapedId}')" title="Restore content">Restore</button>
                 </div>
             </div>
             `;
