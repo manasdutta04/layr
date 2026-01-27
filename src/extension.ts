@@ -5,11 +5,15 @@ import * as fs from 'fs';
 import MarkdownIt from 'markdown-it';
 import { planner } from './planner';
 import { PlanRefiner } from './planner/refiner';
+import { TemplateManager } from './templates/templateManager';
+import { TemplateBrowser } from './templates/templateBrowser';
 
 /**
  * This method is called when the extension is activated
  */
 export function activate(context: vscode.ExtensionContext) {
+  const templateManager = new TemplateManager(context);
+  const templateBrowser = new TemplateBrowser(context, templateManager);
   console.log('🚀 LAYR EXTENSION ACTIVATE FUNCTION CALLED! 🚀');
   console.log('Layr Extension: ONLINE ONLY MODE ACTIVATED - Build ' + new Date().toISOString());
   console.log('Layr extension is now active! 🚀');
@@ -58,6 +62,32 @@ export function activate(context: vscode.ExtensionContext) {
   // Refresh planner configuration after .env is loaded
   console.log('Layr: Refreshing planner configuration after .env load');
   planner.refreshConfig();
+
+  const browseTemplatesCommand = vscode.commands.registerCommand('layr.browseTemplates', () => {
+      templateBrowser.open();
+  });
+
+  // --- NEW: Register "Save As Template" Command ---
+  const saveAsTemplateCommand = vscode.commands.registerCommand('layr.saveAsTemplate', async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+          vscode.window.showErrorMessage('Open a file to save it as a template.');
+          return;
+      }
+
+      const name = await vscode.window.showInputBox({ prompt: 'Enter template name' });
+      if (!name) return;
+
+      const category = await vscode.window.showQuickPick(
+          ['Web', 'Backend', 'Mobile', 'Data', 'DevOps', 'Desktop'], 
+          { placeHolder: 'Select a category' }
+      );
+      if (!category) return;
+
+      const content = editor.document.getText();
+      // @ts-ignore
+      await templateManager.saveTemplate(name, content, category);
+  });
 
   // Register the "Refine Plan Section" command
   const refinePlanSectionCommand = vscode.commands.registerCommand('layr.refinePlanSection', async () => {
@@ -648,6 +678,8 @@ Troubleshooting: https://github.com/manasdutta04/layr#troubleshooting`;
     exportPlanCommand,
     refinePlanSectionCommand,
     configChangeListener,
+    browseTemplatesCommand,
+    saveAsTemplateCommand,
     vscode.commands.registerCommand('layr.applyRefinement', async (uri: vscode.Uri) => {
       // If uri is not provided, try to get it from the active editor
       const targetUri = uri || vscode.window.activeTextEditor?.document.uri;
