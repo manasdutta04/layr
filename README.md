@@ -212,6 +212,27 @@ See `GROQ_SETUP.md` for detailed instructions.
 - Optimized layout for readability
 - Great for documentation and presentations
 
+### Plan Version Control 🆕
+
+Never lose track of your project's history. Layr now includes a powerful **Version Control System** that automatically tracks the evolution of your plans.
+
+**Features:**
+- **Auto-Save**: Every time you generate a plan or refine a section, a new version is saved automatically.
+- **History View**: Browse a visual timeline of your plan's history.
+- **Diff Viewer**: Compare any previous version side-by-side with your current file.
+- **Restore**: Recover any past version with a single click.
+
+**How to Use:**
+1. **View History**: Run the command `Layr: View Plan History` (`Ctrl+Shift+P`).
+2. **Compare Versions**: In the history panel, click the "Diff with Active" button next to any version.
+   - This opens a standard VS Code diff view comparing that past version with your currently open file.
+3. **Restore Version**: Click "Restore" to open that specific version in a new editor window.
+
+**Where is it stored?**
+All version history is stored safely in your workspace under the `.layr/history/` directory.
+
+> **Note**: This feature requires you to have a workspace folder open in VS Code. If you are just editing a single file without a folder, history cannot be saved.
+
 ### Best Practices for Prompts
 
 **Be Specific** : Include technology preferences, key features, and constraints

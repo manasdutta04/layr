@@ -25,6 +25,7 @@
     "onCommand:layr.createPlan",
     "onCommand:layr.executePlan",
     "onCommand:layr.exportPlan",
+    "onCommand:layr.viewPlanHistory",
     "onStartupFinished"
   ],
   "main": "./out/extension.js",
@@ -76,6 +77,13 @@
         "command": "layr.estimateCost",
         "title": "Layr: Estimate Cloud Costs",
         "category": "Layr"
+        "title": "Layr: Estimate Cloud Costs"
+      },
+      {
+        "command": "layr.viewPlanHistory",
+        "title": "Layr: View Plan History",
+        "category": "Layr",
+        "icon": "$(history)"
       }
     ],
     "menus": {

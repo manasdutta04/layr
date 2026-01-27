@@ -21,3 +21,6 @@ Thumbs.db
 
 # TypeScript
 *.tsbuildinfo
+
+# Layr version history
+.layr/

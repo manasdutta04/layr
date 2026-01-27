@@ -48,7 +48,7 @@ export class PlanRefiner {
     const text = document.getText();
     const lines = text.split(/\r?\n/);
     const sections: PlanSection[] = [];
-    
+
     let currentSection: Partial<PlanSection> | null = null;
 
     // Check for text before the first heading
@@ -115,14 +115,14 @@ export class PlanRefiner {
    */
   public static getSectionAtSelection(document: vscode.TextDocument, selection: vscode.Selection): PlanSection | null {
     const sections = this.parsePlanSections(document);
-    
+
     // Find section that contains the selection
     for (const section of sections) {
       if (selection.start.line >= section.startLine && selection.start.line <= section.endLine) {
         return section;
       }
     }
-    
+
     return null;
   }
 
@@ -135,7 +135,7 @@ export class PlanRefiner {
     refinementPrompt: string
   ): Promise<string | null> {
     const fullContext = document.getText();
-    
+
     try {
       return await planner.refineSection(section.content, refinementPrompt, fullContext);
     } catch (error) {
@@ -187,14 +187,14 @@ export class PlanRefiner {
   /**
    * Apply changes from an active session
    */
-  public static async applyActiveRefinement(uri: vscode.Uri): Promise<void> {
+  public static async applyActiveRefinement(uri: vscode.Uri): Promise<vscode.TextDocument | null> {
     const session = this.activeSessions.get(uri.toString());
     if (!session) {
-      return;
+      return null;
     }
 
     const { document, section, refinedContent } = session;
-    
+
     // Check for concurrent edits
     const currentText = document.getText(new vscode.Range(
       new vscode.Position(section.startLine, 0),
@@ -208,7 +208,7 @@ export class PlanRefiner {
         'Overwrite'
       );
       if (proceed !== 'Overwrite') {
-        return;
+        return null;
       }
     }
 
@@ -218,16 +218,18 @@ export class PlanRefiner {
       new vscode.Position(section.startLine, 0),
       lastLine.range.end
     );
-    
+
     edit.replace(document.uri, range, refinedContent);
     const success = await vscode.workspace.applyEdit(edit);
-    
+
     if (success) {
       await document.save();
       vscode.window.showInformationMessage('Section refined successfully!');
       this.discardActiveRefinement(uri);
+      return document;
     } else {
       vscode.window.showErrorMessage('Failed to apply refinements.');
+      return null;
     }
   }
 
@@ -240,7 +242,7 @@ export class PlanRefiner {
       this.activeSessions.delete(session.originalUri.toString());
       this.activeSessions.delete(session.refinedUri.toString());
     }
-    
+
     // Close the active editor (the diff)
     await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
   }
