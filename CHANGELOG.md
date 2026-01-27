@@ -2,6 +2,27 @@
 
 All notable changes to the "Layr" extension will be documented in this file.
 
+## [2.1.4] - 2026-01-25
+
+### Added
+- Plan Refiner feature: Select and refine any section of your plan with AI
+- "Refine Plan Section" command available in context menu and command palette
+- Side-by-side diff view for reviewing refined content
+- Apply/Discard buttons in editor toolbar for accepting or rejecting refinements
+- Visual progress percentage during plan generation
+- Enhanced error messages with helpful troubleshooting guidance
+- Generic language support in error messages for better multi-IDE compatibility
+
+### Changed
+- Improved user experience with real-time progress feedback
+- Enhanced error handling with detailed diagnostic information
+- Better AI provider error reporting and suggestions
+- Optimized plan generation workflow with progress indicators
+
+### Fixed
+- Error messages now provide actionable next steps
+- Progress tracking accuracy improved during plan generation
+
 ## [2.1.3] - 2026-01-16
 
 ### Added

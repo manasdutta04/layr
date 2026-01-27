@@ -2,7 +2,7 @@
   "name": "layr",
   "displayName": "Layr - AI Planning Layer",
   "description": "AI-powered project planning that just works! Pre-configured with Groq - install and start planning instantly. Zero configuration required.",
-  "version": "2.1.3",
+  "version": "2.1.4",
   "publisher": "ManasDutta",
   "icon": "layr.png",
   "repository": {
@@ -70,6 +70,11 @@
       {
         "command": "layr.saveAsTemplate",
         "title": "Layr: Save Current File as Template",
+        "category": "Layr"
+      },
+      {
+        "command": "layr.estimateCost",
+        "title": "Layr: Estimate Cloud Costs",
         "category": "Layr"
       }
     ],

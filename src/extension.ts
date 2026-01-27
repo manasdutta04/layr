@@ -7,13 +7,16 @@ import { planner } from './planner';
 import { PlanRefiner } from './planner/refiner';
 import { TemplateManager } from './templates/templateManager';
 import { TemplateBrowser } from './templates/templateBrowser';
+import { estimateCost } from './cost-estimation/costEstimator';
 
 /**
  * This method is called when the extension is activated
  */
 export function activate(context: vscode.ExtensionContext) {
+  // Initialize Managers
   const templateManager = new TemplateManager(context);
   const templateBrowser = new TemplateBrowser(context, templateManager);
+
   console.log('🚀 LAYR EXTENSION ACTIVATE FUNCTION CALLED! 🚀');
   console.log('Layr Extension: ONLINE ONLY MODE ACTIVATED - Build ' + new Date().toISOString());
   console.log('Layr extension is now active! 🚀');
@@ -63,6 +66,7 @@ export function activate(context: vscode.ExtensionContext) {
   console.log('Layr: Refreshing planner configuration after .env load');
   planner.refreshConfig();
 
+  // --- NEW: Register "Browse Templates" Command ---
   const browseTemplatesCommand = vscode.commands.registerCommand('layr.browseTemplates', () => {
       templateBrowser.open();
   });
@@ -662,6 +666,30 @@ Troubleshooting: https://github.com/manasdutta04/layr#troubleshooting`;
     }
   });
 
+  // Register the "Estimate Cost" command
+  const estimateCostCommand = vscode.commands.registerCommand('layr.estimateCost', () => {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      vscode.window.showErrorMessage('Open a plan file to estimate costs.');
+      return;
+    }
+
+    const document = editor.document;
+    const text = document.getText();
+    
+    // 1. Calculate the cost
+    const costReport = estimateCost(text);
+
+    // 2. Append the report to the bottom of the file
+    editor.edit(editBuilder => {
+        const lastLine = document.lineAt(document.lineCount - 1);
+        const position = new vscode.Position(document.lineCount, 0);
+        editBuilder.insert(position, costReport);
+    });
+
+    vscode.window.showInformationMessage('💰 Cost estimation added to your plan!');
+  });
+
   // Listen for configuration changes
   const configChangeListener = vscode.workspace.onDidChangeConfiguration(event => {
     if (event.affectsConfiguration('layr.planSize') ||
@@ -676,6 +704,7 @@ Troubleshooting: https://github.com/manasdutta04/layr#troubleshooting`;
     createPlanCommand,
     executePlanCommand,
     exportPlanCommand,
+    estimateCostCommand, // Added Cost Estimator
     refinePlanSectionCommand,
     configChangeListener,
     browseTemplatesCommand,
