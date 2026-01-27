@@ -5,6 +5,8 @@ import * as fs from 'fs';
 import MarkdownIt from 'markdown-it';
 import { planner } from './planner';
 import { PlanRefiner } from './planner/refiner';
+import { TemplateManager } from './templates/templateManager';
+import { TemplateBrowser } from './templates/templateBrowser';
 import { estimateCost } from './cost-estimation/costEstimator';
 import { VersionManager } from './version-control/VersionManager';
 import { PlanDiffProvider } from './version-control/diffProvider';
@@ -14,6 +16,10 @@ import { HistoryView } from './version-control/HistoryView';
  * This method is called when the extension is activated
  */
 export function activate(context: vscode.ExtensionContext) {
+  // Initialize Managers
+  const templateManager = new TemplateManager(context);
+  const templateBrowser = new TemplateBrowser(context, templateManager);
+
   console.log('🚀 LAYR EXTENSION ACTIVATE FUNCTION CALLED! 🚀');
   console.log('Layr Extension: ONLINE ONLY MODE ACTIVATED - Build ' + new Date().toISOString());
   console.log('Layr extension is now active! 🚀');
@@ -708,6 +714,8 @@ Troubleshooting: https://github.com/manasdutta04/layr#troubleshooting`;
     estimateCostCommand, // Added Cost Estimator
     refinePlanSectionCommand,
     configChangeListener,
+    browseTemplatesCommand,
+    saveAsTemplateCommand,
     vscode.commands.registerCommand('layr.applyRefinement', async (uri: vscode.Uri) => {
       // If uri is not provided, try to get it from the active editor
       const targetUri = uri || vscode.window.activeTextEditor?.document.uri;

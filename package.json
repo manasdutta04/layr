@@ -64,7 +64,19 @@
         "icon": "$(x)"
       },
       {
+        "command": "layr.browseTemplates",
+        "title": "Layr: Browse Templates",
+        "category": "Layr"
+      },
+      {
+        "command": "layr.saveAsTemplate",
+        "title": "Layr: Save Current File as Template",
+        "category": "Layr"
+      },
+      {
         "command": "layr.estimateCost",
+        "title": "Layr: Estimate Cloud Costs",
+        "category": "Layr"
         "title": "Layr: Estimate Cloud Costs"
       },
       {
