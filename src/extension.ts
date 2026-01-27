@@ -6,6 +6,9 @@ import MarkdownIt from 'markdown-it';
 import { planner } from './planner';
 import { PlanRefiner } from './planner/refiner';
 import { estimateCost } from './cost-estimation/costEstimator';
+import { VersionManager } from './version-control/VersionManager';
+import { PlanDiffProvider } from './version-control/diffProvider';
+import { HistoryView } from './version-control/HistoryView';
 
 /**
  * This method is called when the extension is activated
@@ -21,20 +24,20 @@ export function activate(context: vscode.ExtensionContext) {
   console.log('Layr: Extension root:', extensionRoot);
   console.log('Layr: Attempting to load .env from:', envPath);
   console.log('Layr: .env file exists:', fs.existsSync(envPath));
-  
+
   if (fs.existsSync(envPath)) {
     try {
       // Load .env from extension directory
       const result = dotenv.config({ path: envPath });
       console.log('Layr: dotenv.config() result:', result.error ? 'ERROR: ' + result.error : 'SUCCESS');
       console.log('Layr: GROQ_API_KEY after dotenv:', process.env.GROQ_API_KEY ? '***configured***' : 'not found');
-      
+
       // Manual fallback - read file directly
       if (!process.env.GROQ_API_KEY) {
         console.log('Layr: dotenv failed, trying manual file read');
         const envContent = fs.readFileSync(envPath, 'utf8');
         console.log('Layr: .env file content length:', envContent.length);
-        
+
         const lines = envContent.split('\n');
         for (const line of lines) {
           const trimmed = line.trim();
@@ -50,7 +53,7 @@ export function activate(context: vscode.ExtensionContext) {
       console.log('Layr: Error loading .env file:', error instanceof Error ? error.message : String(error));
       console.log('Layr: Tip: Ensure .env file exists in extension directory. See: https://github.com/manasdutta04/layr#setup');
     }
-    
+
     console.log('Layr: Final GROQ_API_KEY status:', process.env.GROQ_API_KEY ? '***configured*** (length: ' + process.env.GROQ_API_KEY.length + ')' : 'not found');
   } else {
     console.log('Layr: No .env file found in extension directory. API key should be set via VS Code settings. Guide: https://github.com/manasdutta04/layr#configuration');
@@ -59,6 +62,24 @@ export function activate(context: vscode.ExtensionContext) {
   // Refresh planner configuration after .env is loaded
   console.log('Layr: Refreshing planner configuration after .env load');
   planner.refreshConfig();
+
+  // Initialize Version Control Components
+  const versionManager = new VersionManager();
+  const planDiffProvider = new PlanDiffProvider(versionManager);
+
+  // Register the Diff Provider
+  context.subscriptions.push(
+    vscode.workspace.registerTextDocumentContentProvider(PlanDiffProvider.scheme, planDiffProvider)
+  );
+
+  // Register "View Plan History" command
+  const viewHistoryCommand = vscode.commands.registerCommand('layr.viewPlanHistory', async () => {
+    // Ensure we have a valid workspace path if it wasn't available at startup
+    versionManager.updateWorkspacePath();
+    HistoryView.createOrShow(context.extensionUri, versionManager);
+  });
+
+  context.subscriptions.push(viewHistoryCommand);
 
   // Register the "Refine Plan Section" command
   const refinePlanSectionCommand = vscode.commands.registerCommand('layr.refinePlanSection', async () => {
@@ -96,9 +117,9 @@ export function activate(context: vscode.ExtensionContext) {
       cancellable: false
     }, async (progress) => {
       progress.report({ message: 'AI is thinking...' });
-      
+
       const refinedContent = await PlanRefiner.refine(document, section, refinementPrompt);
-      
+
       if (refinedContent) {
         await PlanRefiner.showDiffAndApply(document, section, refinedContent);
       }
@@ -136,45 +157,58 @@ export function activate(context: vscode.ExtensionContext) {
       }, async (progress) => {
         // Track cumulative percentage for smooth visual feedback
         let lastReportedPercentage = 0;
-        
+
         const updateProgress = (targetPercentage: number, message: string) => {
           const increment = targetPercentage - lastReportedPercentage;
           lastReportedPercentage = targetPercentage;
-          progress.report({ 
+          progress.report({
             increment: increment,
             message: `[${targetPercentage}%] ${message}`
           });
         };
-        
+
         try {
           // Stage 1: Analyze request
           updateProgress(15, 'Analyzing your request...');
-          
+
           // Generate the plan
           updateProgress(35, 'Connecting to AI provider...');
           const plan = await planner.generatePlan(prompt.trim());
           updateProgress(60, 'Formatting plan as Markdown...');
-          
+
           // Convert plan to Markdown
           const markdown = planner.planToMarkdown(plan);
           updateProgress(80, 'Preparing document...');
-          
+
           // Create a new document with the plan
           const doc = await vscode.workspace.openTextDocument({
             content: markdown,
             language: 'markdown'
           });
-          
+
           updateProgress(90, 'Opening in editor...');
-          
+
           // Show the document in a new editor
           await vscode.window.showTextDocument(doc, {
             preview: false,
             viewColumn: vscode.ViewColumn.One
           });
-          
+
+          updateProgress(95, 'Saving version history...');
+
+          // Get the actual model name from planner config
+          const modelName = (planner as any).aiModel || 'groq-llama-3.3-70b-versatile';
+
+          // Save the initial version
+          await versionManager.saveVersion(plan, {
+            description: 'Initial Plan Generation',
+            prompt: prompt.trim(),
+            model: modelName,
+            versionLabel: 'v1'
+          });
+
           updateProgress(100, 'Plan generated successfully! ✨');
-          
+
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
           const fullError = `Failed to generate plan:
@@ -204,7 +238,7 @@ Need help? Visit: https://github.com/manasdutta04/layr#troubleshooting`;
     try {
       // Get the active editor
       const editor = vscode.window.activeTextEditor;
-      
+
       if (!editor) {
         const action = await vscode.window.showWarningMessage(
           'No plan file is currently open. Please open a Layr-generated plan (.md file) or create a new plan first.',
@@ -212,7 +246,7 @@ Need help? Visit: https://github.com/manasdutta04/layr#troubleshooting`;
           'Need Help',
           'Cancel'
         );
-        
+
         if (action === 'Create Plan') {
           await vscode.commands.executeCommand('layr.createPlan');
         } else if (action === 'Need Help') {
@@ -240,7 +274,7 @@ Need help? Visit: https://github.com/manasdutta04/layr#troubleshooting`;
           'Create New Plan',
           'Cancel'
         );
-        
+
         if (action === 'Create New Plan') {
           await vscode.commands.executeCommand('layr.createPlan');
         }
@@ -277,9 +311,9 @@ Need help? Visit: https://github.com/manasdutta04/layr#troubleshooting`;
         const cursorChat = vscode.extensions.getExtension('cursor.chat');
         const windsurfChat = vscode.extensions.getExtension('windsurf.ai');
         const antigravityChat = vscode.extensions.getExtension('antigravity.ai');
-        
+
         let chatOpened = false;
-        
+
         // Try GitHub Copilot Chat (VS Code)
         if (copilotChat) {
           try {
@@ -287,7 +321,7 @@ Need help? Visit: https://github.com/manasdutta04/layr#troubleshooting`;
               query: `I have a project plan that I need help implementing. Here's the complete plan:\n\n${content}\n\nPlease help me implement this step by step. Let's start with Phase 1.`
             });
             chatOpened = true;
-            
+
             vscode.window.showInformationMessage(
               'Plan sent to GitHub Copilot Chat! Check the chat panel to start implementation.',
               'Open Chat'
@@ -300,7 +334,7 @@ Need help? Visit: https://github.com/manasdutta04/layr#troubleshooting`;
             console.log('Failed to open Copilot Chat:', e);
           }
         }
-        
+
         // Try Cursor AI Chat
         if (!chatOpened && cursorChat) {
           try {
@@ -308,7 +342,7 @@ Need help? Visit: https://github.com/manasdutta04/layr#troubleshooting`;
               text: `I have a project plan that I need help implementing. Here's the complete plan:\n\n${content}\n\nPlease help me implement this step by step. Let's start with Phase 1.`
             });
             chatOpened = true;
-            
+
             vscode.window.showInformationMessage(
               'Plan sent to Cursor AI! Check the chat panel to start implementation. Docs: https://github.com/manasdutta04/layr#implementation'
             );
@@ -316,7 +350,7 @@ Need help? Visit: https://github.com/manasdutta04/layr#troubleshooting`;
             console.log('Failed to open Cursor Chat:', e);
           }
         }
-        
+
         // Try Windsurf AI
         if (!chatOpened && windsurfChat) {
           try {
@@ -324,7 +358,7 @@ Need help? Visit: https://github.com/manasdutta04/layr#troubleshooting`;
               prompt: `I have a project plan that I need help implementing. Here's the complete plan:\n\n${content}\n\nPlease help me implement this step by step. Let's start with Phase 1.`
             });
             chatOpened = true;
-            
+
             vscode.window.showInformationMessage(
               'Plan sent to Windsurf AI! Check the chat panel to start implementation.'
             );
@@ -332,7 +366,7 @@ Need help? Visit: https://github.com/manasdutta04/layr#troubleshooting`;
             console.log('Failed to open Windsurf Chat:', e);
           }
         }
-        
+
         // Try Antigravity AI
         if (!chatOpened && antigravityChat) {
           try {
@@ -340,7 +374,7 @@ Need help? Visit: https://github.com/manasdutta04/layr#troubleshooting`;
               message: `I have a project plan that I need help implementing. Here's the complete plan:\n\n${content}\n\nPlease help me implement this step by step. Let's start with Phase 1.`
             });
             chatOpened = true;
-            
+
             vscode.window.showInformationMessage(
               'Plan sent to Antigravity AI! Check the chat panel to start implementation.'
             );
@@ -348,7 +382,7 @@ Need help? Visit: https://github.com/manasdutta04/layr#troubleshooting`;
             console.log('Failed to open Antigravity Chat:', e);
           }
         }
-        
+
         // Generic fallback: Try common chat commands
         if (!chatOpened) {
           const commonChatCommands = [
@@ -357,7 +391,7 @@ Need help? Visit: https://github.com/manasdutta04/layr#troubleshooting`;
             'ai.chat.open',
             'assistant.open'
           ];
-          
+
           for (const command of commonChatCommands) {
             try {
               await vscode.commands.executeCommand(command);
@@ -368,11 +402,11 @@ Need help? Visit: https://github.com/manasdutta04/layr#troubleshooting`;
             }
           }
         }
-        
+
         // Final fallback: Copy to clipboard and show instructions
         if (!chatOpened) {
           await vscode.env.clipboard.writeText(content);
-          
+
           const action = await vscode.window.showInformationMessage(
             'Could not open AI Chat. Plan copied to clipboard!\n\nPaste it into your AI assistant (ChatGPT, Claude, GitHub Copilot, etc.) to get implementation help.',
             { modal: false },
@@ -398,7 +432,7 @@ Need help? Visit: https://github.com/manasdutta04/layr#troubleshooting`;
 
       } catch (error) {
         console.error('Error executing plan with AI:', error);
-        
+
         // Fallback: Copy to clipboard
         await vscode.env.clipboard.writeText(content);
         const action = await vscode.window.showInformationMessage(
@@ -406,7 +440,7 @@ Need help? Visit: https://github.com/manasdutta04/layr#troubleshooting`;
           'Got it',
           'Read Docs'
         );
-        
+
         if (action === 'Read Docs') {
           vscode.env.openExternal(vscode.Uri.parse('https://github.com/manasdutta04/layr#how-to-execute-plans'));
         }
@@ -429,7 +463,7 @@ Troubleshooting: https://github.com/manasdutta04/layr#troubleshooting`;
     try {
       // Get the active editor
       const editor = vscode.window.activeTextEditor;
-      
+
       if (!editor) {
         vscode.window.showWarningMessage('No plan file is currently open. Please open a Layr plan (.md file) to export.');
         return;
@@ -467,7 +501,7 @@ Troubleshooting: https://github.com/manasdutta04/layr#troubleshooting`;
           });
 
           const htmlContent = md.render(content);
-          
+
           // Apply styling
           const styledHtml = `
 <!DOCTYPE html>
@@ -600,7 +634,7 @@ Troubleshooting: https://github.com/manasdutta04/layr#troubleshooting`;
             // Save in same directory
             const sourcePath = editor.document.uri.fsPath;
             savePath = sourcePath.replace(/\.md$/, '') + '.html';
-            
+
             // If it already exists, confirm overwrite
             if (fs.existsSync(savePath)) {
               const overwrite = await vscode.window.showWarningMessage(
@@ -612,7 +646,7 @@ Troubleshooting: https://github.com/manasdutta04/layr#troubleshooting`;
           }
 
           fs.writeFileSync(savePath, styledHtml);
-          
+
           vscode.window.showInformationMessage(`Plan exported successfully to ${path.basename(savePath)}`, 'Open File').then(action => {
             if (action === 'Open File') {
               vscode.env.openExternal(vscode.Uri.file(savePath));
@@ -643,15 +677,15 @@ Troubleshooting: https://github.com/manasdutta04/layr#troubleshooting`;
 
     const document = editor.document;
     const text = document.getText();
-    
+
     // 1. Calculate the cost
     const costReport = estimateCost(text);
 
     // 2. Append the report to the bottom of the file
     editor.edit(editBuilder => {
-        const lastLine = document.lineAt(document.lineCount - 1);
-        const position = new vscode.Position(document.lineCount, 0);
-        editBuilder.insert(position, costReport);
+      const lastLine = document.lineAt(document.lineCount - 1);
+      const position = new vscode.Position(document.lineCount, 0);
+      editBuilder.insert(position, costReport);
     });
 
     vscode.window.showInformationMessage('💰 Cost estimation added to your plan!');
@@ -660,8 +694,8 @@ Troubleshooting: https://github.com/manasdutta04/layr#troubleshooting`;
   // Listen for configuration changes
   const configChangeListener = vscode.workspace.onDidChangeConfiguration(event => {
     if (event.affectsConfiguration('layr.planSize') ||
-        event.affectsConfiguration('layr.planType') ||
-        event.affectsConfiguration('layr.geminiApiKey')) {
+      event.affectsConfiguration('layr.planType') ||
+      event.affectsConfiguration('layr.geminiApiKey')) {
       vscode.window.showInformationMessage('✅ Layr configuration updated! Changes will take effect on your next plan generation.');
     }
   });
@@ -678,7 +712,45 @@ Troubleshooting: https://github.com/manasdutta04/layr#troubleshooting`;
       // If uri is not provided, try to get it from the active editor
       const targetUri = uri || vscode.window.activeTextEditor?.document.uri;
       if (targetUri) {
-        await PlanRefiner.applyActiveRefinement(targetUri);
+        const doc = await PlanRefiner.applyActiveRefinement(targetUri);
+        if (doc) {
+          // Save version after refinement
+          const content = doc.getText();
+
+          // Parse the markdown content to extract title and structure
+          const lines = content.split('\n');
+          let title = 'Refined Plan';
+
+          // Extract title from first heading
+          for (const line of lines) {
+            const headingMatch = line.match(/^#\s+(.+)$/);
+            if (headingMatch) {
+              title = headingMatch[1].trim();
+              break;
+            }
+          }
+
+          // Create a proper plan object with the markdown content
+          const plan = {
+            title: title,
+            overview: content, // Store full markdown in overview
+            requirements: [],
+            fileStructure: [],
+            nextSteps: [],
+            generatedAt: new Date(),
+            generatedBy: 'ai' as const
+          };
+
+          // Get the actual model name from planner config
+          const modelName = (planner as any).aiModel || 'groq-llama-3.3-70b-versatile';
+
+          await versionManager.saveVersion(plan, {
+            description: 'Plan User Refinement',
+            versionLabel: 'refined',
+            prompt: 'Refinement applied',
+            model: modelName
+          });
+        }
       }
     }),
     vscode.commands.registerCommand('layr.discardRefinement', async (uri: vscode.Uri) => {
