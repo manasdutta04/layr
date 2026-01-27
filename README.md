@@ -9,7 +9,7 @@ Layr is a VS Code extension that generates comprehensive, actionable project pla
 Layr comes **pre-configured with Groq AI** - just install and start planning immediately:
 
 1. Install the extension
-2. Press `Ctrl+Shift+P` and type "Layr: Create Plan"
+2. Press `Ctrl+Shift+P` and type "Layr: Create Plan" (or press `Ctrl+Alt+P`)
 3. Describe your project
 4. Get your AI-generated plan instantly!
 
@@ -147,9 +147,9 @@ See `GROQ_SETUP.md` for detailed instructions.
 
 ### Creating a Plan
 
-1. **Open Command Palette** : Press `Ctrl+Shift+P` (Windows/Linux) or `Cmd+Shift+P` (Mac)
-2. **Run Command** : Type "Layr: Create Plan" and press Enter
-3. **Describe Your Project** : Enter a natural language description of what you want to build
+1. **Start Planning** : Press `Ctrl+Alt+P` (Windows/Linux) or `Cmd+Alt+P` (Mac) to create a plan immediately.
+   - Alternatively, open the **Command Palette** (`Ctrl+Shift+P` / `Cmd+Shift+P`), type "Layr: Create Plan" and press Enter.
+2. **Describe Your Project** : Enter a natural language description of what you want to build
    - Example: "A React todo app with user authentication and real-time updates"
    - Example: "A REST API for a blog platform with user management"
    - Example: "A Python data analysis script for sales reporting"
@@ -251,7 +251,7 @@ All version history is stored safely in your workspace under the `.layr/history/
 
 | Command | Description | Access |
 |---------|-------------|--------|
-| `Layr: Create Plan` | Generate a new project plan from description | Command Palette |
+| `Layr: Create Plan` | Generate a new project plan from description | `Ctrl+Alt+P` / `Cmd+Alt+P` |
 | `Layr: Execute Plan` | Send plan to AI assistant for implementation | Command Palette |
 | `Layr: Export Plan` | Export plan to PDF or HTML format | Command Palette |
 | `Layr: Refine Plan Section` | Improve selected text with AI refinement | Right-click menu / Command Palette |
