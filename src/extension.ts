@@ -69,6 +69,33 @@ export function activate(context: vscode.ExtensionContext) {
   console.log('Layr: Refreshing planner configuration after .env load');
   planner.refreshConfig();
 
+  // Register "Browse Templates" Command
+  const browseTemplatesCommand = vscode.commands.registerCommand('layr.browseTemplates', () => {
+    templateBrowser.open();
+  });
+
+  // Register "Save As Template" Command
+  const saveAsTemplateCommand = vscode.commands.registerCommand('layr.saveAsTemplate', async () => {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      vscode.window.showErrorMessage('Open a file to save it as a template.');
+      return;
+    }
+
+    const name = await vscode.window.showInputBox({ prompt: 'Enter template name' });
+    if (!name) return;
+
+    const category = await vscode.window.showQuickPick(
+      ['Web', 'Backend', 'Mobile', 'Data', 'DevOps', 'Desktop'], 
+      { placeHolder: 'Select a category' }
+    );
+    if (!category) return;
+
+    const content = editor.document.getText();
+    // @ts-ignore
+    await templateManager.saveTemplate(name, content, category);
+  });
+
   // Initialize Version Control Components
   const versionManager = new VersionManager();
   const planDiffProvider = new PlanDiffProvider(versionManager);

@@ -77,7 +77,6 @@
         "command": "layr.estimateCost",
         "title": "Layr: Estimate Cloud Costs",
         "category": "Layr"
-        "title": "Layr: Estimate Cloud Costs"
       },
       {
         "command": "layr.viewPlanHistory",
