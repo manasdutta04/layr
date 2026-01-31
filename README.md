@@ -1,4 +1,7 @@
 # Layr - AI Planning Layer
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors-)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 **Transform your ideas into structured project plans with AI-powered planning for VS Code.**
 
@@ -403,6 +406,20 @@ MIT License - see LICENSE file for details
 ## Contributors
 
 <!-- ALL-CONTRIBUTORS-LIST:START -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Anusha0501"><img src="https://avatars.githubusercontent.com/u/117845601?v=4?s=100" width="100px;" alt="Anusha"/><br /><sub><b>Anusha</b></sub></a><br /><a href="https://github.com/manasdutta04/layr/commits?author=Anusha0501" title="Code">💻</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
 Thanks to these amazing people <3
