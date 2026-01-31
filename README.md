@@ -411,7 +411,7 @@ MIT License - see LICENSE file for details
 <table>
   <tbody>
     <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Anusha0501"><img src="https://avatars.githubusercontent.com/u/117845601?v=4?s=100" width="100px;" alt="Anusha"/><br /><sub><b>Anusha</b></sub></a><br /><a href="https://github.com/manasdutta04/layr/commits?author=Anusha0501" title="Code">💻</a> <a href="https://github.com/manasdutta04/layr/commits?author=Anusha0501" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Anusha0501"><img src="https://avatars.githubusercontent.com/u/117845601?v=4?s=100" width="100px;" alt="Anusha"/><br /><sub><b>Anusha</b></sub></a><br /><a href="https://github.com/manasdutta04/layr/commits?author=Anusha0501" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
