@@ -25,6 +25,24 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "Psp32",
+      "name": "Prem Patro",
+      "avatar_url": "https://avatars.githubusercontent.com/u/177336799?v=4",
+      "profile": "https://github.com/Psp32",
+      "contributions": [
+        "code",
+        ]
+      },
+      {
+      "login": "Doc-Entity",
+      "name": "Doc-Entity",
+      "avatar_url": "https://avatars.githubusercontent.com/u/135068320?v=4",
+      "profile": "https://github.com/Doc-Entity",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7,
