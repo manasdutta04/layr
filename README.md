@@ -412,6 +412,7 @@ MIT License - see LICENSE file for details
   <tbody>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Anusha0501"><img src="https://avatars.githubusercontent.com/u/117845601?v=4?s=100" width="100px;" alt="Anusha"/><br /><sub><b>Anusha</b></sub></a><br /><a href="https://github.com/manasdutta04/layr/commits?author=Anusha0501" title="Code">💻</a> <a href="https://github.com/manasdutta04/layr/commits?author=Anusha0501" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Psp32"><img src="https://avatars.githubusercontent.com/u/177336799?v=4?s=100" width="100px;" alt="Prem Patro"/><br /><sub><b>Prem Patro</b></sub></a><br /><a href="https://github.com/manasdutta04/layr/commits?author=Psp32" title="Code">💻</a> <a href="https://github.com/manasdutta04/layr/commits?author=Psp32" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Doc-Entity"><img src="https://avatars.githubusercontent.com/u/135068320?v=4?s=100" width="100px;" alt="Doc-Entity"/><br /><sub><b>Doc-Entity</b></sub></a><br /><a href="https://github.com/manasdutta04/layr/commits?author=Doc-Entity" title="Documentation">📖</a></td>
     </tr>
   </tbody>
