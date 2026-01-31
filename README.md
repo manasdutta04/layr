@@ -400,6 +400,14 @@ MIT License - see LICENSE file for details
 
 - Developed by [Manas Dutta](https://github.com/manasdutta04)
 
+## Contributors
+
+<!-- ALL-CONTRIBUTORS-LIST:START -->
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+Thanks to these amazing people <3
+
+
 ## Issues & Support
 
 If you encounter any issues or have suggestions:
