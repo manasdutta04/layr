@@ -15,7 +15,15 @@
       "contributions": [
         "code",
         "doc"
-       
+      ]
+    },
+    {
+      "login": "Pranavkale11",
+      "name": "Pranav Kale Jain",
+      "avatar_url": "https://avatars.githubusercontent.com/u/204769921?v=4",
+      "profile": "https://resume-pranav-kale.vercel.app/",
+      "contributions": [
+        "code"
       ]
     }
   ],
