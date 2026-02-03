@@ -116,6 +116,26 @@
     "configuration": {
       "title": "Layr",
       "properties": {
+        "layr.ai.provider": {
+          "type": "string",
+          "default": "Gemini",
+          "enum": [
+            "Gemini",
+            "Groq",
+            "Ollama"
+          ],
+          "description": "Select the AI provider to use for generating plans."
+        },
+        "layr.ai.customBaseUrl": {
+          "type": "string",
+          "default": "http://localhost:11434",
+          "description": "Base URL for local AI providers (e.g. http://localhost:11434 for Ollama)."
+        },
+        "layr.ai.modelName": {
+          "type": "string",
+          "default": "llama3",
+          "description": "Model name to use for local AI (e.g. llama3, mistral, deepseek-coder)."
+        },
         "layr.planSize": {
           "type": "string",
           "default": "Normal",
