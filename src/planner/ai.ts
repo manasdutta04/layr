@@ -1,5 +1,7 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { ProjectPlan, PlanGenerator, AIServiceError, APIKeyMissingError, FileStructureItem, PlanStep } from './interfaces';
+// 1. Import the cache
+import { PlanCache } from './cache';
 
 /**
  * Gemini AI-powered plan generator
@@ -7,9 +9,14 @@ import { ProjectPlan, PlanGenerator, AIServiceError, APIKeyMissingError, FileStr
 export class GeminiPlanGenerator implements PlanGenerator {
   private genAI: GoogleGenerativeAI | null = null;
   private apiKey: string;
+  // 2. Add cache property
+  private cache: PlanCache;
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
+    // 3. Initialize Cache Singleton
+    this.cache = PlanCache.getInstance();
+
     console.log('GeminiPlanGenerator: API key received:', apiKey ? '***configured***' : 'empty');
     console.log('GeminiPlanGenerator: API key length:', apiKey?.length || 0);
     
@@ -80,6 +87,16 @@ export class GeminiPlanGenerator implements PlanGenerator {
     if (!this.genAI) {
       throw new APIKeyMissingError();
     }
+
+    // 4. CACHE LOOKUP START
+    const cachedPlan = this.cache.get(prompt);
+    if (cachedPlan) {
+      console.log('GeminiPlanGenerator: Cache HIT for prompt:', prompt.substring(0, 50) + '...');
+      // Return cached plan with updated timestamp so it feels fresh
+      return { ...cachedPlan, generatedAt: new Date() };
+    }
+    console.log('GeminiPlanGenerator: Cache MISS. Calling API...');
+    // 4. CACHE LOOKUP END
 
     try {
       const model = this.genAI.getGenerativeModel({ 
@@ -254,6 +271,10 @@ Return ONLY valid JSON. No extra text. Keep file structure simple (max 2 levels 
         generatedAt: new Date(),
         generatedBy: 'ai'
       };
+
+      // 5. CACHE STORE (Save the valid plan)
+      this.cache.set(prompt, plan);
+      console.log('GeminiPlanGenerator: Plan stored in local cache');
 
       return plan;
     } catch (error) {
