@@ -1,7 +1,7 @@
 /**
  * Supported AI providers
  */
-export type AIProviderType = 'gemini' | 'groq';
+export type AIProviderType = 'gemini' | 'groq' | 'ollama';
 
 /**
  * Gemini AI configuration
@@ -10,6 +10,8 @@ export interface GeminiConfig {
   apiKey: string;
   model?: 'gemini-2.5-flash' | 'gemini-2.5-pro' | 'gemini-1.5-pro' | 'gemini-1.5-flash' | 'gemini-pro';
 }
+
+
 
 /**
  * Groq AI configuration
