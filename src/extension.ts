@@ -11,6 +11,8 @@ import { estimateCost } from './cost-estimation/costEstimator';
 import { VersionManager } from './version-control/VersionManager';
 import { PlanDiffProvider } from './version-control/diffProvider';
 import { HistoryView } from './version-control/HistoryView';
+// Import the new Sanitization Service
+import { SanitizationService } from './services/sanitizationService';
 
 /**
  * This method is called when the extension is activated
@@ -143,6 +145,14 @@ export function activate(context: vscode.ExtensionContext) {
       return; // User cancelled
     }
 
+    // --- SECURITY SANITIZATION START ---
+    const { sanitizedText: safeRefinement, wasRedacted } = SanitizationService.sanitize(refinementPrompt);
+    
+    if (wasRedacted) {
+         vscode.window.showInformationMessage('Layr Security: Sensitive data (emails/IPs/keys) in your refinement prompt was redacted.');
+    }
+    // --- SECURITY SANITIZATION END ---
+
     // Show progress
     await vscode.window.withProgress({
       location: vscode.ProgressLocation.Notification,
@@ -151,7 +161,8 @@ export function activate(context: vscode.ExtensionContext) {
     }, async (progress) => {
       progress.report({ message: 'AI is thinking...' });
 
-      const refinedContent = await PlanRefiner.refine(document, section, refinementPrompt);
+      // Use safeRefinement instead of raw refinementPrompt
+      const refinedContent = await PlanRefiner.refine(document, section, safeRefinement);
 
       if (refinedContent) {
         await PlanRefiner.showDiffAndApply(document, section, refinedContent);
@@ -182,6 +193,27 @@ export function activate(context: vscode.ExtensionContext) {
         return; // User cancelled
       }
 
+      // --- SECURITY SANITIZATION START ---
+      const { sanitizedText, wasRedacted } = SanitizationService.sanitize(prompt);
+      
+      let finalPrompt = sanitizedText.trim();
+
+      if (wasRedacted) {
+          const proceed = await vscode.window.showWarningMessage(
+              'Layr Security: We detected sensitive info (emails/IPs/keys) in your prompt. It has been redacted for your safety.',
+              'View Redacted Prompt',
+              'Proceed',
+              'Cancel'
+          );
+
+          if (proceed === 'Cancel') return;
+          if (proceed === 'View Redacted Prompt') {
+             // Show them what we are sending but continue
+             await vscode.window.showInformationMessage(`Sending: "${finalPrompt}"`);
+          }
+      }
+      // --- SECURITY SANITIZATION END ---
+
       // Show progress indicator with percentage tracking
       await vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
@@ -204,9 +236,9 @@ export function activate(context: vscode.ExtensionContext) {
           // Stage 1: Analyze request
           updateProgress(15, 'Analyzing your request...');
 
-          // Generate the plan
+          // Generate the plan using the sanitized prompt
           updateProgress(35, 'Connecting to AI provider...');
-          const plan = await planner.generatePlan(prompt.trim());
+          const plan = await planner.generatePlan(finalPrompt);
           updateProgress(60, 'Formatting plan as Markdown...');
 
           // Convert plan to Markdown
@@ -235,7 +267,7 @@ export function activate(context: vscode.ExtensionContext) {
           // Save the initial version
           await versionManager.saveVersion(plan, {
             description: 'Initial Plan Generation',
-            prompt: prompt.trim(),
+            prompt: finalPrompt, // Store the sanitized prompt in history too
             model: modelName,
             versionLabel: 'v1'
           });
