@@ -1,6 +1,8 @@
 import { AIProvider, AIProviderFactory, AIProviderType, UnsupportedProviderError } from '../interfaces';
 import { GeminiProvider } from './gemini';
 import { GroqProvider } from './groq';
+// FIXED: Import the new provider class
+import { OllamaProvider } from './ollama';
 
 /**
  * Factory for creating AI providers
@@ -17,19 +19,29 @@ export class DefaultAIProviderFactory implements AIProviderFactory {
     return DefaultAIProviderFactory.instance;
   }
 
-  createProvider(type: AIProviderType, config: any): AIProvider {
-    switch (type) {
+  createProvider(type: AIProviderType | string, config: any): AIProvider {
+    // Normalize type to lowercase to ensure matching works (Gemini vs gemini)
+    const normalizedType = type.toLowerCase();
+
+    switch (normalizedType) {
       case 'gemini':
         return new GeminiProvider(config);
       case 'groq':
         return new GroqProvider(config);
+      case 'ollama':
+        // Extract the specific config values needed for Ollama
+        const baseUrl = config.customBaseUrl || 'http://localhost:11434';
+        const model = config.modelName || 'llama3';
+        // FIXED: Return the new OllamaProvider instance
+        return new OllamaProvider(baseUrl, model);
       default:
-        throw new UnsupportedProviderError(type);
+        throw new UnsupportedProviderError(type as AIProviderType);
     }
   }
 
   getSupportedProviders(): AIProviderType[] {
-    return ['gemini', 'groq'];
+    // FIXED: 'ollama' is now a valid type in interfaces.ts, so no casting needed
+    return ['gemini', 'groq', 'ollama'];
   }
 }
 
