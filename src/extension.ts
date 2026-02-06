@@ -363,8 +363,8 @@ Need help? Visit: https://github.com/manasdutta04/layr#troubleshooting`;
                 vscode.commands.executeCommand('workbench.panel.chat.view.copilot.focus');
               }
             });
-          } catch (e) {
-            console.log('Failed to open Copilot Chat:', e);
+          } catch (_e) {
+            console.log('Failed to open Copilot Chat:', _e);
           }
         }
 
@@ -379,8 +379,8 @@ Need help? Visit: https://github.com/manasdutta04/layr#troubleshooting`;
             vscode.window.showInformationMessage(
               'Plan sent to Cursor AI! Check the chat panel to start implementation. Docs: https://github.com/manasdutta04/layr#implementation'
             );
-          } catch (e) {
-            console.log('Failed to open Cursor Chat:', e);
+          } catch (_e) {
+            console.log('Failed to open Cursor Chat:', _e);
           }
         }
 
@@ -395,8 +395,8 @@ Need help? Visit: https://github.com/manasdutta04/layr#troubleshooting`;
             vscode.window.showInformationMessage(
               'Plan sent to Windsurf AI! Check the chat panel to start implementation.'
             );
-          } catch (e) {
-            console.log('Failed to open Windsurf Chat:', e);
+          } catch (_e) {
+            console.log('Failed to open Windsurf Chat:', _e);
           }
         }
 
@@ -411,8 +411,8 @@ Need help? Visit: https://github.com/manasdutta04/layr#troubleshooting`;
             vscode.window.showInformationMessage(
               'Plan sent to Antigravity AI! Check the chat panel to start implementation.'
             );
-          } catch (e) {
-            console.log('Failed to open Antigravity Chat:', e);
+          } catch (_e) {
+            console.log('Failed to open Antigravity Chat:', _e);
           }
         }
 
@@ -430,7 +430,7 @@ Need help? Visit: https://github.com/manasdutta04/layr#troubleshooting`;
               await vscode.commands.executeCommand(command);
               chatOpened = true;
               break;
-            } catch (e) {
+            } catch (_e) {
               // Try next command
             }
           }
@@ -451,7 +451,7 @@ Need help? Visit: https://github.com/manasdutta04/layr#troubleshooting`;
           if (action === 'Try Opening Chat') {
             try {
               await vscode.commands.executeCommand('workbench.action.chat.open');
-            } catch (e) {
+            } catch (_e) {
               vscode.window.showInformationMessage(
                 'Could not automatically open chat. Please open your AI assistant manually and paste the plan from clipboard.\n\nGuide: https://github.com/manasdutta04/layr#implementation'
               );
@@ -525,7 +525,7 @@ Troubleshooting: https://github.com/manasdutta04/layr#troubleshooting`;
         location: vscode.ProgressLocation.Notification,
         title: `Exporting plan to ${format}...`,
         cancellable: false
-      }, async (progress) => {
+      }, async (_progress) => {
         try {
           const md = new MarkdownIt({
             html: true,
@@ -661,7 +661,7 @@ Troubleshooting: https://github.com/manasdutta04/layr#troubleshooting`;
               defaultUri: vscode.Uri.file('project-plan.html'),
               filters: { 'HTML Files': ['html'] }
             });
-            if (!uri) return;
+            if (!uri) { return; }
             savePath = uri.fsPath;
           } else {
             // Save in same directory
@@ -674,7 +674,7 @@ Troubleshooting: https://github.com/manasdutta04/layr#troubleshooting`;
                 `File ${path.basename(savePath)} already exists. Overwrite?`,
                 'Yes', 'No'
               );
-              if (overwrite !== 'Yes') return;
+              if (overwrite !== 'Yes') { return; }
             }
           }
 
@@ -716,7 +716,7 @@ Troubleshooting: https://github.com/manasdutta04/layr#troubleshooting`;
 
     // 2. Append the report to the bottom of the file
     editor.edit(editBuilder => {
-      const lastLine = document.lineAt(document.lineCount - 1);
+      // Last line is calculated but not used variable remove
       const position = new vscode.Position(document.lineCount, 0);
       editBuilder.insert(position, costReport);
     });
@@ -884,7 +884,7 @@ Your plan has been copied to the clipboard! Here's how to use it with AI assista
 Happy coding! 🚀
   `;
 
-  const doc = vscode.workspace.openTextDocument({
+  vscode.workspace.openTextDocument({
     content: instructions.trim(),
     language: 'markdown'
   }).then(doc => {
