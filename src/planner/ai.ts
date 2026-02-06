@@ -19,7 +19,7 @@ export class GeminiPlanGenerator implements PlanGenerator {
 
     console.log('GeminiPlanGenerator: API key received:', apiKey ? '***configured***' : 'empty');
     console.log('GeminiPlanGenerator: API key length:', apiKey?.length || 0);
-    
+
     if (apiKey && apiKey.trim() !== '' && apiKey !== 'your_api_key_here') {
       this.genAI = new GoogleGenerativeAI(apiKey);
       console.log('GeminiPlanGenerator: GoogleGenerativeAI initialized successfully');
@@ -38,39 +38,39 @@ export class GeminiPlanGenerator implements PlanGenerator {
     }
 
     try {
-      const model = this.genAI.getGenerativeModel({ 
-            model: 'gemini-pro',
-            generationConfig: {
-                temperature: 0.7,
-                topK: 40,
-                topP: 0.95,
-                maxOutputTokens: 8192,
-            },
-            safetySettings: [
-                {
-                    category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-                    threshold: HarmBlockThreshold.BLOCK_NONE,
-                },
-                {
-                    category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-                    threshold: HarmBlockThreshold.BLOCK_NONE,
-                },
-                {
-                    category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-                    threshold: HarmBlockThreshold.BLOCK_NONE,
-                },
-                {
-                    category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-                    threshold: HarmBlockThreshold.BLOCK_NONE,
-                },
-            ],
-        });
+      const model = this.genAI.getGenerativeModel({
+        model: 'gemini-pro',
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 8192,
+        },
+        safetySettings: [
+          {
+            category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+            threshold: HarmBlockThreshold.BLOCK_NONE,
+          },
+          {
+            category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+            threshold: HarmBlockThreshold.BLOCK_NONE,
+          },
+          {
+            category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+            threshold: HarmBlockThreshold.BLOCK_NONE,
+          },
+          {
+            category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+            threshold: HarmBlockThreshold.BLOCK_NONE,
+          },
+        ],
+      });
       const result = await model.generateContent("Hello");
       return { success: true };
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       let userMsg = errorMsg;
-      
+
       if (errorMsg.includes('API_KEY_INVALID') || errorMsg.includes('authentication')) {
         userMsg = 'Authentication failed. Please verify your configuration settings.';
       } else if (errorMsg.includes('429') || errorMsg.includes('quota')) {
@@ -78,7 +78,7 @@ export class GeminiPlanGenerator implements PlanGenerator {
       } else if (errorMsg.includes('network') || errorMsg.includes('fetch')) {
         userMsg = 'Network error. Check your internet connection and firewall settings.';
       }
-      
+
       return { success: false, error: userMsg };
     }
   }
@@ -99,34 +99,34 @@ export class GeminiPlanGenerator implements PlanGenerator {
     // 4. CACHE LOOKUP END
 
     try {
-      const model = this.genAI.getGenerativeModel({ 
-            model: 'gemini-pro',
-            generationConfig: {
-                temperature: 0.7,
-                topK: 40,
-                topP: 0.95,
-                maxOutputTokens: 8192,
-            },
-            safetySettings: [
-                {
-                    category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-                    threshold: HarmBlockThreshold.BLOCK_NONE,
-                },
-                {
-                    category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-                    threshold: HarmBlockThreshold.BLOCK_NONE,
-                },
-                {
-                    category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-                    threshold: HarmBlockThreshold.BLOCK_NONE,
-                },
-                {
-                    category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-                    threshold: HarmBlockThreshold.BLOCK_NONE,
-                },
-            ],
-        });
-      
+      const model = this.genAI.getGenerativeModel({
+        model: 'gemini-pro',
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 8192,
+        },
+        safetySettings: [
+          {
+            category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+            threshold: HarmBlockThreshold.BLOCK_NONE,
+          },
+          {
+            category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+            threshold: HarmBlockThreshold.BLOCK_NONE,
+          },
+          {
+            category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+            threshold: HarmBlockThreshold.BLOCK_NONE,
+          },
+          {
+            category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+            threshold: HarmBlockThreshold.BLOCK_NONE,
+          },
+        ],
+      });
+
       const systemPrompt = `Create a concise project plan in JSON format for: "${prompt}"
 
 Return ONLY valid JSON. No extra text. Keep file structure simple (max 2 levels deep).
@@ -163,12 +163,12 @@ Return ONLY valid JSON. No extra text. Keep file structure simple (max 2 levels 
 
       const result = await model.generateContent(systemPrompt);
       const response = await result.response;
-      
+
       // Check for safety filters or blocked content
       console.log('GeminiPlanGenerator: Response candidates:', response.candidates?.length || 0);
       console.log('GeminiPlanGenerator: Finish reason:', response.candidates?.[0]?.finishReason);
       console.log('GeminiPlanGenerator: Safety ratings:', response.candidates?.[0]?.safetyRatings);
-      
+
       const text = response.text();
 
       console.log('GeminiPlanGenerator: Raw AI response:', text);
@@ -189,7 +189,7 @@ Return ONLY valid JSON. No extra text. Keep file structure simple (max 2 levels 
 
       // Try multiple JSON extraction methods
       let jsonText = '';
-      
+
       // Method 1: Look for JSON between ```json and ``` markers
       const codeBlockMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
       if (codeBlockMatch) {
@@ -205,7 +205,7 @@ Return ONLY valid JSON. No extra text. Keep file structure simple (max 2 levels 
             console.log('GeminiPlanGenerator: Found JSON in generic code block');
           }
         }
-        
+
         if (!jsonText) {
           // Method 3: Look for JSON object starting with { and ending with }
           const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -236,20 +236,20 @@ Return ONLY valid JSON. No extra text. Keep file structure simple (max 2 levels 
       } catch (parseError) {
         console.log('GeminiPlanGenerator: JSON parse error:', parseError);
         console.log('GeminiPlanGenerator: Attempting to repair JSON...');
-        
+
         // Try to repair common JSON issues
         let repairedJson = jsonText;
-        
+
         // Fix trailing commas in arrays and objects
         repairedJson = repairedJson.replace(/,(\s*[}\]])/g, '$1');
-        
+
         // Fix missing commas between array elements
         repairedJson = repairedJson.replace(/}(\s*){/g, '},$1{');
         repairedJson = repairedJson.replace(/](\s*)\[/g, '],$1[');
-        
+
         // Fix missing quotes around property names
         repairedJson = repairedJson.replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
-        
+
         // Try parsing the repaired JSON
         try {
           planData = JSON.parse(repairedJson);
@@ -260,7 +260,7 @@ Return ONLY valid JSON. No extra text. Keep file structure simple (max 2 levels 
           throw new AIServiceError('Failed to parse AI response format. The service may have returned malformed data. Try again with a clearer project description.');
         }
       }
-      
+
       // Validate and transform the response
       const plan: ProjectPlan = {
         title: planData.title || 'Generated Project Plan',
@@ -281,15 +281,15 @@ Return ONLY valid JSON. No extra text. Keep file structure simple (max 2 levels 
       if (error instanceof APIKeyMissingError) {
         throw error;
       }
-      
+
       if (error instanceof SyntaxError) {
         throw new AIServiceError('Failed to parse AI response. This may indicate a temporary service issue. Try again in a moment.', error);
       }
-      
+
       if (error instanceof AIServiceError) {
         throw error;
       }
-      
+
       throw new AIServiceError(
         error instanceof Error ? error.message : 'Unknown error occurred while generating plan',
         error instanceof Error ? error : undefined
@@ -297,24 +297,40 @@ Return ONLY valid JSON. No extra text. Keep file structure simple (max 2 levels 
     }
   }
 
-  private validateFileStructure(items: any[]): FileStructureItem[] {
-    return items.map((item, index) => ({
-      name: item.name || `item-${index}`,
-      type: item.type === 'directory' ? 'directory' : 'file',
-      path: item.path || item.name || `item-${index}`,
-      description: item.description,
-      children: item.children ? this.validateFileStructure(item.children) : undefined
-    }));
+  private validateFileStructure(items: unknown[]): FileStructureItem[] {
+    if (!Array.isArray(items)) {
+      return [];
+    }
+
+    return items.map((item, index) => {
+      const typedItem = item as { name?: string; type?: string; path?: string; description?: string; children?: unknown[] };
+      return {
+        name: typedItem.name || `item-${index}`,
+        type: typedItem.type === 'directory' ? 'directory' : 'file',
+        path: typedItem.path || typedItem.name || `item-${index}`,
+        description: typedItem.description,
+        children: typedItem.children ? this.validateFileStructure(typedItem.children) : undefined
+      };
+    });
   }
 
-  private validateNextSteps(steps: any[]): PlanStep[] {
-    return steps.map((step, index) => ({
-      id: step.id || `step-${index + 1}`,
-      description: step.description || `Step ${index + 1}`,
-      completed: Boolean(step.completed),
-      priority: ['high', 'medium', 'low'].includes(step.priority) ? step.priority : 'medium',
-      estimatedTime: step.estimatedTime,
-      dependencies: Array.isArray(step.dependencies) ? step.dependencies : []
-    }));
+  private validateNextSteps(steps: unknown[]): PlanStep[] {
+    if (!Array.isArray(steps)) {
+      return [];
+    }
+
+    return steps.map((step, index) => {
+      const typedStep = step as { id?: string; description?: string; completed?: boolean; priority?: string; estimatedTime?: string; dependencies?: string[] };
+      const priority = typedStep.priority;
+
+      return {
+        id: typedStep.id || `step-${index + 1}`,
+        description: typedStep.description || `Step ${index + 1}`,
+        completed: Boolean(typedStep.completed),
+        priority: (priority === 'high' || priority === 'medium' || priority === 'low') ? priority : 'medium',
+        estimatedTime: typedStep.estimatedTime,
+        dependencies: Array.isArray(typedStep.dependencies) ? typedStep.dependencies : []
+      };
+    });
   }
 }

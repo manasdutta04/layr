@@ -7,13 +7,13 @@ import { AIProvider, AIProviderType, GeminiConfig, AIServiceError, APIKeyMissing
 export class GeminiProvider implements AIProvider {
   public readonly name = 'Google Gemini';
   public readonly type: AIProviderType = 'gemini';
-  
+
   private genAI: GoogleGenerativeAI | null = null;
   private config: GeminiConfig;
 
   constructor(config: GeminiConfig) {
     this.config = config;
-    
+
     if (config.apiKey && config.apiKey.trim() !== '' && config.apiKey !== 'your_api_key_here') {
       this.genAI = new GoogleGenerativeAI(config.apiKey);
       console.log('GeminiProvider: GoogleGenerativeAI initialized successfully');
@@ -22,7 +22,7 @@ export class GeminiProvider implements AIProvider {
     }
   }
 
-  async generatePlan(prompt: string, options?: any): Promise<string> {
+  async generatePlan(prompt: string, options?: { planSize?: string, planType?: string }): Promise<string> {
     if (!this.genAI) {
       throw new APIKeyMissingError('gemini');
     }
@@ -30,8 +30,8 @@ export class GeminiProvider implements AIProvider {
     try {
       // Get the model name from config or use default
       const modelName = this.config.model || 'gemini-pro';
-      
-      const model = this.genAI.getGenerativeModel({ 
+
+      const model = this.genAI.getGenerativeModel({
         model: modelName,
         generationConfig: {
           temperature: 0.7,
@@ -58,7 +58,7 @@ export class GeminiProvider implements AIProvider {
           },
         ],
       });
-      
+
       const systemPrompt = `Create a comprehensive and detailed project plan in JSON format for: "${prompt}"
 
 You are an expert software architect and project manager. Generate a thorough, professional project plan that includes:
@@ -194,10 +194,10 @@ CRITICAL: Return ONLY valid JSON. Do not wrap in markdown code blocks. Do not in
 
       const result = await model.generateContent(systemPrompt);
       const response = await result.response;
-      
+
       console.log('GeminiProvider: Response candidates:', response.candidates?.length || 0);
       console.log('GeminiProvider: Finish reason:', response.candidates?.[0]?.finishReason);
-      
+
       const text = response.text();
       console.log('GeminiProvider: Raw AI response length:', text.length);
 
@@ -211,10 +211,10 @@ CRITICAL: Return ONLY valid JSON. Do not wrap in markdown code blocks. Do not in
       if (error instanceof APIKeyMissingError) {
         throw error;
       }
-      
+
       const errorStr = error instanceof Error ? error.message : String(error);
       let userFriendlyMsg = `Failed to generate plan: ${errorStr}`;
-      
+
       // Provide generic guidance based on error type
       if (errorStr.includes('429') || errorStr.includes('quota')) {
         userFriendlyMsg = 'Service quota exceeded. Please wait a few minutes and try again.';
@@ -225,7 +225,7 @@ CRITICAL: Return ONLY valid JSON. Do not wrap in markdown code blocks. Do not in
       } else if (errorStr.includes('Safety') || errorStr.includes('safety')) {
         userFriendlyMsg = 'Your request was blocked by content policies. Try rephrasing your project description.';
       }
-      
+
       throw new AIServiceError(userFriendlyMsg, error instanceof Error ? error : undefined);
     }
   }
@@ -237,7 +237,7 @@ CRITICAL: Return ONLY valid JSON. Do not wrap in markdown code blocks. Do not in
 
     try {
       const modelName = this.config.model || 'gemini-pro';
-      const model = this.genAI.getGenerativeModel({ 
+      const model = this.genAI.getGenerativeModel({
         model: modelName,
         generationConfig: {
           temperature: 0.7,

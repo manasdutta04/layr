@@ -10,7 +10,7 @@ import { OllamaProvider } from './ollama';
 export class DefaultAIProviderFactory implements AIProviderFactory {
   private static instance: DefaultAIProviderFactory;
 
-  private constructor() {}
+  private constructor() { }
 
   public static getInstance(): DefaultAIProviderFactory {
     if (!DefaultAIProviderFactory.instance) {
@@ -19,21 +19,28 @@ export class DefaultAIProviderFactory implements AIProviderFactory {
     return DefaultAIProviderFactory.instance;
   }
 
-  createProvider(type: AIProviderType | string, config: any): AIProvider {
+  createProvider(type: AIProviderType | string, config: { apiKey?: string; model?: string; customBaseUrl?: string; modelName?: string }): AIProvider {
     // Normalize type to lowercase to ensure matching works (Gemini vs gemini)
     const normalizedType = type.toLowerCase();
 
     switch (normalizedType) {
       case 'gemini':
-        return new GeminiProvider(config);
+        return new GeminiProvider({
+          apiKey: config.apiKey || '',
+          model: config.model as any
+        });
       case 'groq':
-        return new GroqProvider(config);
-      case 'ollama':
+        return new GroqProvider({
+          apiKey: config.apiKey || '',
+          model: config.model as any
+        });
+      case 'ollama': {
         // Extract the specific config values needed for Ollama
         const baseUrl = config.customBaseUrl || 'http://localhost:11434';
         const model = config.modelName || 'llama3';
         // FIXED: Return the new OllamaProvider instance
         return new OllamaProvider(baseUrl, model);
+      }
       default:
         throw new UnsupportedProviderError(type as AIProviderType);
     }
