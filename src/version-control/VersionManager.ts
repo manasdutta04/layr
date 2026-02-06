@@ -4,6 +4,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
 import { ProjectPlan } from '../planner/interfaces';
+import { logger } from '../utils/logger';
+import { FileSystemError } from '../utils/errors';
 
 export interface PlanVersion {
     id: string; // UUID-based unique id
@@ -81,6 +83,7 @@ export class VersionManager {
 
         try {
             await fs.promises.writeFile(versionFile, JSON.stringify(version, null, 2));
+            logger.debug(`VersionManager: Saved plan version ${id} to ${versionFile}`);
 
             // Automatically cleanup old versions to prevent unlimited growth
             // Keep only the 50 most recent versions
@@ -88,7 +91,7 @@ export class VersionManager {
 
             return id;
         } catch (error) {
-            console.error('Failed to save plan version:', error);
+            logger.error(`VersionManager: Failed to save plan version ${id}:`, error);
             return null;
         }
     }
@@ -109,7 +112,7 @@ export class VersionManager {
                         const version = JSON.parse(content) as PlanVersion;
                         versions.push(version);
                     } catch (e) {
-                        console.error(`Status: Failed to list version file ${file}:`, e);
+                        logger.warn(`VersionManager: Failed to parse version file ${file}:`, e);
                     }
                 }
             }
@@ -117,7 +120,7 @@ export class VersionManager {
             // Sort by timestamp descending
             return versions.sort((a, b) => b.timestamp - a.timestamp);
         } catch (error) {
-            console.error('Failed to list versions:', error);
+            logger.error('VersionManager: Failed to list versions:', error);
             return [];
         }
     }
@@ -126,13 +129,16 @@ export class VersionManager {
         if (!this.historyDir) return null;
 
         const versionFile = path.join(this.historyDir, `${id}.json`);
-        if (!fs.existsSync(versionFile)) return null;
+        if (!fs.existsSync(versionFile)) {
+            logger.warn(`VersionManager: Version file not found: ${id}`);
+            return null;
+        }
 
         try {
             const content = await fs.promises.readFile(versionFile, 'utf8');
             return JSON.parse(content) as PlanVersion;
         } catch (error) {
-            console.error('Failed to read version:', error);
+            logger.error(`VersionManager: Failed to read version ${id}:`, error);
             return null;
         }
     }
@@ -166,13 +172,16 @@ export class VersionManager {
                     await fs.promises.unlink(versionFile);
                     deletedCount++;
                 } catch (error) {
-                    console.error(`Failed to delete version ${version.id}:`, error);
+                    logger.error(`VersionManager: Failed to delete old version ${version.id}:`, error);
                 }
             }
 
+            if (deletedCount > 0) {
+                logger.info(`VersionManager: Cleaned up ${deletedCount} old versions`);
+            }
             return deletedCount;
         } catch (error) {
-            console.error('Failed to cleanup old versions:', error);
+            logger.error('VersionManager: Failed to cleanup old versions:', error);
             return 0;
         }
     }
@@ -188,9 +197,10 @@ export class VersionManager {
 
         try {
             await fs.promises.unlink(versionFile);
+            logger.info(`VersionManager: Deleted version ${id}`);
             return true;
         } catch (error) {
-            console.error('Failed to delete version:', error);
+            logger.error(`VersionManager: Failed to delete version ${id}:`, error);
             return false;
         }
     }

@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import { TemplateManager } from './templateManager';
+import { logger } from '../utils/logger';
+import { TemplateError } from '../utils/errors';
 
 export class TemplateBrowser {
     private panel: vscode.WebviewPanel | undefined;
@@ -49,19 +51,33 @@ export class TemplateBrowser {
     }
 
     private async applyTemplate(templateId: string) {
-        const template = this.templateManager.getTemplateById(templateId);
-        if (!template) return;
+        try {
+            const template = this.templateManager.getTemplateById(templateId);
+            if (!template) {
+                logger.error(`TemplateBrowser: Template not found: ${templateId}`);
+                vscode.window.showErrorMessage(`Template not found: ${templateId}`);
+                return;
+            }
 
-        // Open a new untitled document with the template content
-        const doc = await vscode.workspace.openTextDocument({
-            content: template.content,
-            language: 'markdown' 
-        });
-        await vscode.window.showTextDocument(doc);
-        
-        vscode.window.showInformationMessage(`Loaded template: ${template.name}`);
-        // Optional: Close browser after selection
-        // this.panel?.dispose(); 
+            logger.info(`TemplateBrowser: Applying template "${template.name}"`);
+
+            // Open a new untitled document with the template content
+            const doc = await vscode.workspace.openTextDocument({
+                content: template.content,
+                language: 'markdown' 
+            });
+            await vscode.window.showTextDocument(doc);
+            
+            vscode.window.showInformationMessage(`Loaded template: ${template.name}`);
+        } catch (error) {
+            logger.error(`TemplateBrowser: Failed to apply template ${templateId}:`, error);
+            const action = 'Show Logs';
+            vscode.window.showErrorMessage(`Failed to load template: ${error instanceof Error ? error.message : String(error)}`, action).then(selected => {
+                if (selected === action) {
+                    logger.show();
+                }
+            });
+        }
     }
 
     private getHtmlForWebview(templates: any[]): string {

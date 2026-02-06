@@ -1,4 +1,5 @@
 import { ProjectPlan } from './interfaces';
+import { logger } from '../utils/logger';
 
 interface CacheEntry {
   timestamp: number;
@@ -48,7 +49,7 @@ export class PlanCache {
     this.cache.delete(key);
     this.cache.set(key, entry);
 
-    console.log(`[PlanCache] Hit for: "${prompt.substring(0, 20)}..."`);
+    logger.debug(`PlanCache: Hit for: "${prompt.substring(0, 20)}..."`);
     return entry.plan;
   }
 
@@ -63,7 +64,7 @@ export class PlanCache {
     }
 
     this.cache.set(key, { timestamp: Date.now(), plan });
-    console.log(`[PlanCache] Stored: "${prompt.substring(0, 20)}..."`);
+    logger.debug(`PlanCache: Stored: "${prompt.substring(0, 20)}..."`);
   }
 
   clear(): void {

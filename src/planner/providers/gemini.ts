@@ -1,5 +1,7 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
-import { AIProvider, AIProviderType, GeminiConfig, AIServiceError, APIKeyMissingError } from '../interfaces';
+import { AIProvider, AIProviderType, GeminiConfig } from '../interfaces';
+import { logger } from '../../utils/logger';
+import { AIProviderError } from '../../utils/errors';
 
 /**
  * Gemini AI provider implementation
@@ -16,15 +18,15 @@ export class GeminiProvider implements AIProvider {
     
     if (config.apiKey && config.apiKey.trim() !== '' && config.apiKey !== 'your_api_key_here') {
       this.genAI = new GoogleGenerativeAI(config.apiKey);
-      console.log('GeminiProvider: GoogleGenerativeAI initialized successfully');
+      logger.info('GeminiProvider: GoogleGenerativeAI initialized successfully');
     } else {
-      console.log('GeminiProvider: API key invalid or placeholder, not initializing AI');
+      logger.info('GeminiProvider: API key invalid or placeholder, not initializing AI');
     }
   }
 
   async generatePlan(prompt: string, options?: any): Promise<string> {
     if (!this.genAI) {
-      throw new APIKeyMissingError('gemini');
+      throw new AIProviderError('Gemini API key is not configured.', this.name);
     }
 
     try {
@@ -195,20 +197,20 @@ CRITICAL: Return ONLY valid JSON. Do not wrap in markdown code blocks. Do not in
       const result = await model.generateContent(systemPrompt);
       const response = await result.response;
       
-      console.log('GeminiProvider: Response candidates:', response.candidates?.length || 0);
-      console.log('GeminiProvider: Finish reason:', response.candidates?.[0]?.finishReason);
+      logger.debug('GeminiProvider: Response candidates:', response.candidates?.length || 0);
+      logger.debug('GeminiProvider: Finish reason:', response.candidates?.[0]?.finishReason);
       
       const text = response.text();
-      console.log('GeminiProvider: Raw AI response length:', text.length);
+      logger.debug('GeminiProvider: Raw AI response length:', text.length);
 
       if (!text || text.trim() === '') {
-        throw new AIServiceError('AI service returned an empty response. Please try again.');
+        throw new AIProviderError('AI service returned an empty response. Please try again.', this.name);
       }
 
       return text;
     } catch (error) {
-      console.error('GeminiProvider: Error generating plan:', error);
-      if (error instanceof APIKeyMissingError) {
+      logger.error('GeminiProvider: Error generating plan:', error);
+      if (error instanceof AIProviderError) {
         throw error;
       }
       
@@ -226,13 +228,13 @@ CRITICAL: Return ONLY valid JSON. Do not wrap in markdown code blocks. Do not in
         userFriendlyMsg = 'Your request was blocked by content policies. Try rephrasing your project description.';
       }
       
-      throw new AIServiceError(userFriendlyMsg, error instanceof Error ? error : undefined);
+      throw new AIProviderError(userFriendlyMsg, this.name);
     }
   }
 
   async refineSection(sectionContent: string, refinementPrompt: string, fullContext: string): Promise<string> {
     if (!this.genAI) {
-      throw new APIKeyMissingError('gemini');
+      throw new AIProviderError('AI provider not initialized', this.name);
     }
 
     try {
@@ -270,8 +272,8 @@ CRITICAL INSTRUCTIONS:
       const text = response.text();
       return text;
     } catch (error) {
-      console.error('GeminiProvider.refineSection error:', error);
-      throw new AIServiceError(error instanceof Error ? error.message : String(error));
+      logger.error('GeminiProvider.refineSection error:', error);
+      throw new AIProviderError(error instanceof Error ? error.message : String(error), this.name);
     }
   }
 
@@ -282,10 +284,10 @@ CRITICAL INSTRUCTIONS:
       await model.generateContent("Hello");
       return true;
     } catch (error) {
-      console.error('GeminiProvider: API key validation failed:', error);
+      logger.error('GeminiProvider: API key validation failed:', error);
       const errorMsg = error instanceof Error ? error.message : String(error);
       if (errorMsg.includes('API_KEY_INVALID') || errorMsg.includes('authentication')) {
-        console.error('GeminiProvider: Invalid API key detected. Get one at: https://ai.google.dev/tutorials/rest_quickstart');
+        logger.error('GeminiProvider: Invalid API key detected. Get one at: https://ai.google.dev/tutorials/rest_quickstart');
       }
       return false;
     }

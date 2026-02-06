@@ -1,7 +1,9 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
-import { ProjectPlan, PlanGenerator, AIServiceError, APIKeyMissingError, FileStructureItem, PlanStep } from './interfaces';
+import { ProjectPlan, PlanGenerator, FileStructureItem, PlanStep } from './interfaces';
 // 1. Import the cache
 import { PlanCache } from './cache';
+import { logger } from '../utils/logger';
+import { AIProviderError } from '../utils/errors';
 
 /**
  * Gemini AI-powered plan generator
@@ -17,14 +19,13 @@ export class GeminiPlanGenerator implements PlanGenerator {
     // 3. Initialize Cache Singleton
     this.cache = PlanCache.getInstance();
 
-    console.log('GeminiPlanGenerator: API key received:', apiKey ? '***configured***' : 'empty');
-    console.log('GeminiPlanGenerator: API key length:', apiKey?.length || 0);
+    logger.debug('GeminiPlanGenerator: Initializing with API key length:', apiKey?.length || 0);
     
     if (apiKey && apiKey.trim() !== '' && apiKey !== 'your_api_key_here') {
       this.genAI = new GoogleGenerativeAI(apiKey);
-      console.log('GeminiPlanGenerator: GoogleGenerativeAI initialized successfully');
+      logger.info('GeminiPlanGenerator: GoogleGenerativeAI initialized successfully');
     } else {
-      console.log('GeminiPlanGenerator: API key invalid or placeholder, not initializing AI');
+      logger.warn('GeminiPlanGenerator: API key invalid or placeholder, not initializing AI');
     }
   }
 
@@ -38,6 +39,7 @@ export class GeminiPlanGenerator implements PlanGenerator {
     }
 
     try {
+      logger.info('GeminiPlanGenerator: Testing API key...');
       const model = this.genAI.getGenerativeModel({ 
             model: 'gemini-pro',
             generationConfig: {
@@ -66,8 +68,10 @@ export class GeminiPlanGenerator implements PlanGenerator {
             ],
         });
       const result = await model.generateContent("Hello");
+      logger.info('GeminiPlanGenerator: API key test successful');
       return { success: true };
     } catch (error) {
+      logger.error('GeminiPlanGenerator: API key test failed:', error);
       const errorMsg = error instanceof Error ? error.message : String(error);
       let userMsg = errorMsg;
       
@@ -85,17 +89,17 @@ export class GeminiPlanGenerator implements PlanGenerator {
 
   async generatePlan(prompt: string): Promise<ProjectPlan> {
     if (!this.genAI) {
-      throw new APIKeyMissingError();
+      throw new AIProviderError('AI provider is not configured.', 'Gemini');
     }
 
     // 4. CACHE LOOKUP START
     const cachedPlan = this.cache.get(prompt);
     if (cachedPlan) {
-      console.log('GeminiPlanGenerator: Cache HIT for prompt:', prompt.substring(0, 50) + '...');
+      logger.info(`GeminiPlanGenerator: Cache HIT for prompt: ${prompt.substring(0, 50)}...`);
       // Return cached plan with updated timestamp so it feels fresh
       return { ...cachedPlan, generatedAt: new Date() };
     }
-    console.log('GeminiPlanGenerator: Cache MISS. Calling API...');
+    logger.info('GeminiPlanGenerator: Cache MISS. Calling API...');
     // 4. CACHE LOOKUP END
 
     try {
@@ -165,25 +169,24 @@ Return ONLY valid JSON. No extra text. Keep file structure simple (max 2 levels 
       const response = await result.response;
       
       // Check for safety filters or blocked content
-      console.log('GeminiPlanGenerator: Response candidates:', response.candidates?.length || 0);
-      console.log('GeminiPlanGenerator: Finish reason:', response.candidates?.[0]?.finishReason);
-      console.log('GeminiPlanGenerator: Safety ratings:', response.candidates?.[0]?.safetyRatings);
+      logger.debug('GeminiPlanGenerator: Response candidates:', response.candidates?.length || 0);
+      logger.debug('GeminiPlanGenerator: Finish reason:', response.candidates?.[0]?.finishReason);
+      logger.debug('GeminiPlanGenerator: Safety ratings:', response.candidates?.[0]?.safetyRatings);
       
       const text = response.text();
 
-      console.log('GeminiPlanGenerator: Raw AI response:', text);
-      console.log('GeminiPlanGenerator: Response length:', text.length);
-      console.log('GeminiPlanGenerator: Response preview (first 200 chars):', text.substring(0, 200));
+      logger.debug('GeminiPlanGenerator: Response length:', text.length);
+      logger.debug('GeminiPlanGenerator: Response preview (first 200 chars):', text.substring(0, 200));
 
       // Check if response is empty due to safety filters
       if (!text || text.length === 0) {
         const finishReason = response.candidates?.[0]?.finishReason;
         if (finishReason === 'SAFETY') {
-          throw new AIServiceError('Your request was blocked by content policies. Try rephrasing your project description.');
+          throw new AIProviderError('Your request was blocked by content policies. Try rephrasing your project description.', 'Gemini');
         } else if (finishReason === 'RECITATION') {
-          throw new AIServiceError('Content was blocked. Try rephrasing your project description differently.');
+          throw new AIProviderError('Content was blocked. Try rephrasing your project description differently.', 'Gemini');
         } else {
-          throw new AIServiceError(`AI service returned an empty response. Please try again.`);
+          throw new AIProviderError(`AI service returned an empty response. Please try again.`, 'Gemini');
         }
       }
 
@@ -194,7 +197,7 @@ Return ONLY valid JSON. No extra text. Keep file structure simple (max 2 levels 
       const codeBlockMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
       if (codeBlockMatch) {
         jsonText = codeBlockMatch[1].trim();
-        console.log('GeminiPlanGenerator: Found JSON in code block');
+        logger.debug('GeminiPlanGenerator: Found JSON in code block');
       } else {
         // Method 2: Look for JSON between ``` and ``` markers (without json specifier)
         const genericCodeBlockMatch = text.match(/```\s*([\s\S]*?)\s*```/);
@@ -202,7 +205,7 @@ Return ONLY valid JSON. No extra text. Keep file structure simple (max 2 levels 
           const potentialJson = genericCodeBlockMatch[1].trim();
           if (potentialJson.startsWith('{') && potentialJson.endsWith('}')) {
             jsonText = potentialJson;
-            console.log('GeminiPlanGenerator: Found JSON in generic code block');
+            logger.debug('GeminiPlanGenerator: Found JSON in generic code block');
           }
         }
         
@@ -211,31 +214,29 @@ Return ONLY valid JSON. No extra text. Keep file structure simple (max 2 levels 
           const jsonMatch = text.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
             jsonText = jsonMatch[0];
-            console.log('GeminiPlanGenerator: Found JSON object');
+            logger.debug('GeminiPlanGenerator: Found JSON object');
           } else {
             // Method 4: Try to parse the entire response as JSON
             try {
               JSON.parse(text.trim());
               jsonText = text.trim();
-              console.log('GeminiPlanGenerator: Entire response is valid JSON');
+              logger.debug('GeminiPlanGenerator: Entire response is valid JSON');
             } catch {
-              console.log('GeminiPlanGenerator: No valid JSON found in response');
-              console.log('GeminiPlanGenerator: Full response for debugging:', text);
-              throw new AIServiceError('AI service returned an invalid response format. Try with a simpler project description.');
+              logger.error('GeminiPlanGenerator: No valid JSON found in response. Full response:', text);
+              throw new AIProviderError('AI service returned an invalid response format. Try with a simpler project description.', 'Gemini');
             }
           }
         }
       }
 
-      console.log('GeminiPlanGenerator: Extracted JSON:', jsonText.substring(0, 200) + (jsonText.length > 200 ? '...' : ''));
+      logger.debug(`GeminiPlanGenerator: Extracted JSON length: ${jsonText.length}`);
 
       // Try to parse JSON with error handling and repair
       let planData;
       try {
         planData = JSON.parse(jsonText);
       } catch (parseError) {
-        console.log('GeminiPlanGenerator: JSON parse error:', parseError);
-        console.log('GeminiPlanGenerator: Attempting to repair JSON...');
+        logger.warn('GeminiPlanGenerator: JSON parse error, attempting to repair...', parseError);
         
         // Try to repair common JSON issues
         let repairedJson = jsonText;
@@ -253,11 +254,11 @@ Return ONLY valid JSON. No extra text. Keep file structure simple (max 2 levels 
         // Try parsing the repaired JSON
         try {
           planData = JSON.parse(repairedJson);
-          console.log('GeminiPlanGenerator: Successfully repaired and parsed JSON');
+          logger.info('GeminiPlanGenerator: Successfully repaired and parsed JSON');
         } catch (repairError) {
-          console.log('GeminiPlanGenerator: Failed to repair JSON:', repairError);
-          console.log('GeminiPlanGenerator: Original JSON for debugging:', jsonText);
-          throw new AIServiceError('Failed to parse AI response format. The service may have returned malformed data. Try again with a clearer project description.');
+          logger.error('GeminiPlanGenerator: Failed to repair JSON:', repairError);
+          logger.debug('GeminiPlanGenerator: Original JSON:', jsonText);
+          throw new AIProviderError('Failed to parse AI response format. The service may have returned malformed data. Try again with a clearer project description.', 'Gemini');
         }
       }
       
@@ -274,25 +275,23 @@ Return ONLY valid JSON. No extra text. Keep file structure simple (max 2 levels 
 
       // 5. CACHE STORE (Save the valid plan)
       this.cache.set(prompt, plan);
-      console.log('GeminiPlanGenerator: Plan stored in local cache');
+      logger.info('GeminiPlanGenerator: Plan stored in local cache');
 
       return plan;
     } catch (error) {
-      if (error instanceof APIKeyMissingError) {
+      if (error instanceof AIProviderError) {
         throw error;
       }
+      
+      logger.error('GeminiPlanGenerator: Unexpected error:', error);
       
       if (error instanceof SyntaxError) {
-        throw new AIServiceError('Failed to parse AI response. This may indicate a temporary service issue. Try again in a moment.', error);
+        throw new AIProviderError('Failed to parse AI response. This may indicate a temporary service issue. Try again in a moment.', 'Gemini');
       }
       
-      if (error instanceof AIServiceError) {
-        throw error;
-      }
-      
-      throw new AIServiceError(
+      throw new AIProviderError(
         error instanceof Error ? error.message : 'Unknown error occurred while generating plan',
-        error instanceof Error ? error : undefined
+        'Gemini'
       );
     }
   }

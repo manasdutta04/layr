@@ -1,8 +1,11 @@
 import { detectServices } from './serviceDetector';
 import { PRICING_DATABASE, ALTERNATIVES } from './pricingData';
+import { logger } from '../utils/logger';
 
 export function estimateCost(planText: string): string {
+    logger.info('CostEstimator: Estimating costs for plan...');
     const services = detectServices(planText);
+    logger.debug(`CostEstimator: Detected services: ${services.join(', ')}`);
     let totalCost = 0;
     let breakdownRows = '';
     let savings = 0;

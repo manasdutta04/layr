@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { PlanTemplate, BUILTIN_TEMPLATES } from './builtinTemplates';
+import { logger } from '../utils/logger';
+import { TemplateError } from '../utils/errors';
 
 export class TemplateManager {
     private localTemplatesPath: string;
@@ -13,12 +15,19 @@ export class TemplateManager {
     }
 
     private ensureStorageExists() {
-        if (!fs.existsSync(this.localTemplatesPath)) {
-            fs.mkdirSync(this.localTemplatesPath, { recursive: true });
+        try {
+            if (!fs.existsSync(this.localTemplatesPath)) {
+                fs.mkdirSync(this.localTemplatesPath, { recursive: true });
+                logger.info(`TemplateManager: Created local templates directory at ${this.localTemplatesPath}`);
+            }
+        } catch (error) {
+            logger.error('TemplateManager: Failed to create templates directory:', error);
+            throw new TemplateError(`Failed to initialize template storage: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 
     public getAllTemplates(): PlanTemplate[] {
+        logger.debug('TemplateManager: Fetching all templates');
         const userTemplates = this.loadUserTemplates();
         return [...BUILTIN_TEMPLATES, ...userTemplates];
     }
@@ -26,6 +35,7 @@ export class TemplateManager {
     private loadUserTemplates(): PlanTemplate[] {
         const templates: PlanTemplate[] = [];
         try {
+            if (!fs.existsSync(this.localTemplatesPath)) return [];
             const files = fs.readdirSync(this.localTemplatesPath);
             for (const file of files) {
                 if (file.endsWith('.json')) {
@@ -33,25 +43,32 @@ export class TemplateManager {
                     templates.push(JSON.parse(content));
                 }
             }
+            logger.debug(`TemplateManager: Loaded ${templates.length} user templates`);
         } catch (error) {
-            console.error('Error loading user templates:', error);
+            logger.error('TemplateManager: Error loading user templates:', error);
         }
         return templates;
     }
 
     public async saveTemplate(name: string, content: string, category: PlanTemplate['category']): Promise<void> {
-        const id = name.toLowerCase().replace(/\s+/g, '-');
-        const template: PlanTemplate = {
-            id,
-            name,
-            category,
-            description: 'User created template',
-            content
-        };
+        try {
+            const id = name.toLowerCase().replace(/\s+/g, '-');
+            const template: PlanTemplate = {
+                id,
+                name,
+                category,
+                description: 'User created template',
+                content
+            };
 
-        const filePath = path.join(this.localTemplatesPath, `${id}.json`);
-        fs.writeFileSync(filePath, JSON.stringify(template, null, 2));
-        vscode.window.showInformationMessage(`Template "${name}" saved successfully!`);
+            const filePath = path.join(this.localTemplatesPath, `${id}.json`);
+            fs.writeFileSync(filePath, JSON.stringify(template, null, 2));
+            logger.info(`TemplateManager: Saved template "${name}" to ${filePath}`);
+            vscode.window.showInformationMessage(`Template "${name}" saved successfully!`);
+        } catch (error) {
+            logger.error(`TemplateManager: Failed to save template "${name}":`, error);
+            throw new TemplateError(`Failed to save template: ${error instanceof Error ? error.message : String(error)}`);
+        }
     }
 
     public getTemplateById(id: string): PlanTemplate | undefined {

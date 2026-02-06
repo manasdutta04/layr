@@ -1,5 +1,7 @@
-import { AIProvider, AIProviderType, AIServiceError } from '../interfaces';
+import { AIProvider, AIProviderType } from '../interfaces';
 import fetch from 'node-fetch';
+import { logger } from '../../utils/logger';
+import { AIProviderError } from '../../utils/errors';
 
 /**
  * Groq AI Provider (via Secure Proxy)
@@ -25,14 +27,16 @@ export class GroqProvider implements AIProvider {
 
   async generatePlan(prompt: string, options?: any): Promise<string> {
     if (!this.useProxy) {
-      throw new AIServiceError(
+      throw new AIProviderError(
         'Layr AI backend proxy is not configured. ' +
         'The extension author needs to deploy the API. ' +
-        'For documentation, visit: https://github.com/manasdutta04/layr#setup'
+        'For documentation, visit: https://github.com/manasdutta04/layr#setup',
+        this.name
       );
     }
 
     try {
+      logger.info(`GroqProvider: Generating plan for project type: ${options?.planType || 'SaaS'} (Size: ${options?.planSize || 'Normal'})`);
       // Extract settings from options
       const planSize = options?.planSize || 'Normal';
       const planType = options?.planType || 'SaaS';
@@ -635,7 +639,7 @@ CRITICAL REMINDER: Your response MUST be ${planSize === 'Concise' ? 'EXACTLY 80-
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Proxy API Error:', errorText);
+        logger.error('GroqProvider: Proxy API Error:', errorText);
         
         let userMsg = `API request failed (${response.status}): ${errorText}`;
         
@@ -652,23 +656,25 @@ CRITICAL REMINDER: Your response MUST be ${planSize === 'Concise' ? 'EXACTLY 80-
           userMsg = `Request error (${response.status}): ${errorText}. Check your configuration at: https://github.com/manasdutta04/layr#setup`;
         }
         
-        throw new AIServiceError(userMsg);
+        throw new AIProviderError(userMsg, this.name);
       }
 
       const data = await response.json() as any;
       const content = data.content || '';
       
       if (!content) {
-        throw new AIServiceError('AI service returned an empty response. This might indicate a temporary service issue. Please try again.');
+        throw new AIProviderError('AI service returned an empty response. This might indicate a temporary service issue. Please try again.', this.name);
       }
 
+      logger.debug('GroqProvider: Successfully generated plan');
       return content;
     } catch (error) {
-      if (error instanceof AIServiceError) {
+      if (error instanceof AIProviderError) {
         throw error;
       }
       
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('GroqProvider: Unexpected error:', error);
       let userMsg = `Failed to generate plan: ${errorMsg}`;
       
       // Provide generic guidance for network errors
@@ -680,16 +686,17 @@ CRITICAL REMINDER: Your response MUST be ${planSize === 'Concise' ? 'EXACTLY 80-
         userMsg = 'Invalid response format received. This is likely a temporary issue. Please try again shortly.';
       }
       
-      throw new AIServiceError(userMsg, error as Error);
+      throw new AIProviderError(userMsg, this.name);
     }
   }
 
   async refineSection(sectionContent: string, refinementPrompt: string, fullContext: string): Promise<string> {
     if (!this.useProxy) {
-      throw new AIServiceError('Layr AI backend proxy is not configured.');
+      throw new AIProviderError('Layr AI backend proxy is not configured.', this.name);
     }
 
     try {
+      logger.info('GroqProvider: Refining section...');
       const systemPrompt = `You are an expert software architect. Refine the following section of a project plan based on the user's request.
       
 Original Section Content:
@@ -723,14 +730,16 @@ CRITICAL INSTRUCTIONS:
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`API request failed with status ${response.status}: ${errorText}`);
+        throw new AIProviderError(`API request failed with status ${response.status}: ${errorText}`, this.name);
       }
 
       const data = await response.json() as any;
+      logger.debug('GroqProvider: Section refined successfully');
       return data.content || '';
     } catch (error) {
-      console.error('GroqProvider.refineSection error:', error);
-      throw new AIServiceError(error instanceof Error ? error.message : String(error));
+      logger.error('GroqProvider.refineSection error:', error);
+      if (error instanceof AIProviderError) throw error;
+      throw new AIProviderError(error instanceof Error ? error.message : String(error), this.name);
     }
   }
 

@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import { planner } from './index';
+import { logger } from '../utils/logger';
+import { AIProviderError } from '../utils/errors';
 
 export interface PlanSection {
   title: string;
@@ -135,11 +137,22 @@ export class PlanRefiner {
     refinementPrompt: string
   ): Promise<string | null> {
     const fullContext = document.getText();
+    logger.info(`PlanRefiner: Refining section "${section.title}"...`);
 
     try {
-      return await planner.refineSection(section.content, refinementPrompt, fullContext);
+      const result = await planner.refineSection(section.content, refinementPrompt, fullContext);
+      logger.info(`PlanRefiner: Section "${section.title}" refined successfully.`);
+      return result;
     } catch (error) {
-      vscode.window.showErrorMessage(`Refinement failed: ${error instanceof Error ? error.message : String(error)}`);
+      logger.error(`PlanRefiner: Refinement failed for section "${section.title}":`, error);
+      
+      const message = error instanceof Error ? error.message : String(error);
+      const action = 'Show Logs';
+      vscode.window.showErrorMessage(`Refinement failed: ${message}`, action).then(selected => {
+        if (selected === action) {
+          logger.show();
+        }
+      });
       return null;
     }
   }
