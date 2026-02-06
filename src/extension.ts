@@ -83,16 +83,16 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     const name = await vscode.window.showInputBox({ prompt: 'Enter template name' });
-    if (!name) return;
+    if (!name) { return; }
 
     const category = await vscode.window.showQuickPick(
-      ['Web', 'Backend', 'Mobile', 'Data', 'DevOps', 'Desktop'], 
+      ['Web', 'Backend', 'Mobile', 'Data', 'DevOps', 'Desktop'],
       { placeHolder: 'Select a category' }
-    );
-    if (!category) return;
+    ) as 'Web' | 'Backend' | 'Mobile' | 'Data' | 'DevOps' | 'Desktop' | undefined;
+
+    if (!category) { return; }
 
     const content = editor.document.getText();
-    // @ts-ignore
     await templateManager.saveTemplate(name, content, category);
   });
 
@@ -230,7 +230,7 @@ export function activate(context: vscode.ExtensionContext) {
           updateProgress(95, 'Saving version history...');
 
           // Get the actual model name from planner config
-          const modelName = (planner as any).aiModel || 'groq-llama-3.3-70b-versatile';
+          const modelName = planner.getAIModel() || 'groq-llama-3.3-70b-versatile';
 
           // Save the initial version
           await versionManager.saveVersion(plan, {
@@ -777,7 +777,7 @@ Troubleshooting: https://github.com/manasdutta04/layr#troubleshooting`;
           };
 
           // Get the actual model name from planner config
-          const modelName = (planner as any).aiModel || 'groq-llama-3.3-70b-versatile';
+          const modelName = planner.getAIModel() || 'groq-llama-3.3-70b-versatile';
 
           await versionManager.saveVersion(plan, {
             description: 'Plan User Refinement',
