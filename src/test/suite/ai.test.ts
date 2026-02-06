@@ -2,23 +2,9 @@ import * as assert from 'assert';
 import { GeminiPlanGenerator } from '../../planner/ai';
 import { PlanCache } from '../../planner/cache';
 
-// Mock GoogleGenerativeAI
-const mockGenerateContent = {
-    response: {
-        text: () => JSON.stringify({
-            title: "Test Project",
-            overview: "Overview",
-            requirements: [],
-            fileStructure: [],
-            nextSteps: []
-        }),
-        candidates: [{ finishReason: 'STOP', safetyRatings: [] }]
-    }
-};
 
-const mockGetGenerativeModel = () => ({
-    generateContent: async () => mockGenerateContent
-});
+
+
 
 // Since we can't easily mock the import for GoogleGenerativeAI in this setup without a mocking library like proxyquire or similar which might be overkill,
 // we will focus on testing the class methods that don't immediately call the external API or rely on the fact that we can't fully mock the external dependency in this simple setup.
