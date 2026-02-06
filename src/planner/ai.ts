@@ -65,7 +65,7 @@ export class GeminiPlanGenerator implements PlanGenerator {
           },
         ],
       });
-      const result = await model.generateContent("Hello");
+      await model.generateContent("Hello");
       return { success: true };
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
