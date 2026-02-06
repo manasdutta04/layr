@@ -36,7 +36,7 @@ export class PlanCache {
     const key = this.generateKey(prompt);
     const entry = this.cache.get(key);
 
-    if (!entry) return null;
+    if (!entry) {return null;}
 
     // Check if expired
     if (Date.now() - entry.timestamp > this.ttl) {
