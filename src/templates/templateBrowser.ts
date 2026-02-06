@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { TemplateManager } from './templateManager';
+import { PlanTemplate } from './builtinTemplates';
 
 export class TemplateBrowser {
     private panel: vscode.WebviewPanel | undefined;
@@ -7,7 +8,7 @@ export class TemplateBrowser {
     constructor(
         private readonly context: vscode.ExtensionContext,
         private readonly templateManager: TemplateManager
-    ) {}
+    ) { }
 
     public open() {
         if (this.panel) {
@@ -43,28 +44,28 @@ export class TemplateBrowser {
     }
 
     private updateContent() {
-        if (!this.panel) return;
+        if (!this.panel) { return; }
         const templates = this.templateManager.getAllTemplates();
         this.panel.webview.html = this.getHtmlForWebview(templates);
     }
 
     private async applyTemplate(templateId: string) {
         const template = this.templateManager.getTemplateById(templateId);
-        if (!template) return;
+        if (!template) { return; }
 
         // Open a new untitled document with the template content
         const doc = await vscode.workspace.openTextDocument({
             content: template.content,
-            language: 'markdown' 
+            language: 'markdown'
         });
         await vscode.window.showTextDocument(doc);
-        
+
         vscode.window.showInformationMessage(`Loaded template: ${template.name}`);
         // Optional: Close browser after selection
         // this.panel?.dispose(); 
     }
 
-    private getHtmlForWebview(templates: any[]): string {
+    private getHtmlForWebview(templates: PlanTemplate[]): string {
         // Simple CSS for the cards
         const style = `
             body { font-family: var(--vscode-font-family); padding: 20px; color: var(--vscode-editor-foreground); }
