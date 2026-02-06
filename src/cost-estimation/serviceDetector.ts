@@ -1,4 +1,4 @@
-import { PRICING_DATABASE } from './pricingData';
+// import { PRICING_DATABASE } from './pricingData';
 
 // Map keywords to Service IDs
 const SERVICE_KEYWORDS: Record<string, string[]> = {
