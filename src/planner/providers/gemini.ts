@@ -22,7 +22,7 @@ export class GeminiProvider implements AIProvider {
     }
   }
 
-  async generatePlan(prompt: string, options?: { planSize?: string, planType?: string }): Promise<string> {
+  async generatePlan(prompt: string, _options?: { planSize?: string, planType?: string }): Promise<string> {
     if (!this.genAI) {
       throw new APIKeyMissingError('gemini');
     }
