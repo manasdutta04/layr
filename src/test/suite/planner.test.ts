@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { Planner } from '../../planner/index';
-import { AIProvider, AIProviderType, ProjectPlan } from '../../planner/interfaces';
+import { AIProvider, AIProviderType } from '../../planner/interfaces';
 
 class MockAIProvider implements AIProvider {
     name = 'MockProvider';
@@ -8,7 +8,7 @@ class MockAIProvider implements AIProvider {
 
     constructor(private shouldFail: boolean = false, private returnMalformedJson: boolean = false) { }
 
-    async generatePlan(prompt: string, options?: { planSize?: string, planType?: string }): Promise<string> {
+    async generatePlan(_prompt: string, _options?: { planSize?: string, planType?: string }): Promise<string> {
         if (this.shouldFail) {
             throw new Error('Mock failure');
         }
@@ -30,11 +30,11 @@ class MockAIProvider implements AIProvider {
         });
     }
 
-    async refineSection(sectionContent: string, refinementPrompt: string, fullContext: string): Promise<string> {
+    async refineSection(_sectionContent: string, _refinementPrompt: string, _fullContext: string): Promise<string> {
         return 'Refined content';
     }
 
-    async validateApiKey(apiKey: string): Promise<boolean> {
+    async validateApiKey(_apiKey: string): Promise<boolean> {
         return true;
     }
 
@@ -78,7 +78,7 @@ suite('Planner Test Suite', () => {
         try {
             await planner.generatePlan('Test prompt');
             assert.fail('Should have thrown an error');
-        } catch (error: any) {
+        } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
             assert.ok(error.message.includes('Mock failure'));
         }
     });

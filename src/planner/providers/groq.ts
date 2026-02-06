@@ -13,7 +13,9 @@ export class GroqProvider implements AIProvider {
   private proxyURL: string;
   private useProxy: boolean;
 
-  constructor(config: { apiKey?: string; model?: string; baseURL?: string }) {
+  private fetcher: typeof fetch;
+
+  constructor(config: { apiKey?: string; model?: string; baseURL?: string }, fetcher?: typeof fetch) {
     this.model = config.model || 'llama-3.3-70b-versatile';
 
     // Secure proxy endpoint - keeps API key safe on server
@@ -21,6 +23,7 @@ export class GroqProvider implements AIProvider {
 
     // Use proxy if URL is configured, otherwise this will fail gracefully
     this.useProxy = this.proxyURL !== 'YOUR_VERCEL_URL_HERE';
+    this.fetcher = fetcher || fetch;
   }
 
   async generatePlan(prompt: string, options?: { planSize?: string, planType?: string }): Promise<string> {
@@ -618,7 +621,7 @@ ${planSize === 'Concise' || planType === 'Hobby' || planType === 'Prototype' ?
 CRITICAL REMINDER: Your response MUST be ${planSize === 'Concise' ? 'EXACTLY 80-100 lines' : planSize === 'Normal' ? 'EXACTLY 180-240 lines' : '300+ lines'}. Count your lines and STOP when you reach the limit.`;
 
       // Call the secure proxy endpoint instead of Groq directly
-      const response = await fetch(this.proxyURL, {
+      const response = await this.fetcher(this.proxyURL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -708,7 +711,7 @@ CRITICAL INSTRUCTIONS:
 4. Do not include any introductory or concluding text.
 5. If the user asks for more detail, be specific and technical.`;
 
-      const response = await fetch(this.proxyURL, {
+      const response = await this.fetcher(this.proxyURL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -734,7 +737,7 @@ CRITICAL INSTRUCTIONS:
     }
   }
 
-  async validateApiKey(apiKey: string): Promise<boolean> {
+  async validateApiKey(_apiKey: string): Promise<boolean> {
     // With proxy, we don't validate keys client-side
     // Just check if proxy is configured
     return this.useProxy;

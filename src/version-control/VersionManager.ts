@@ -20,10 +20,17 @@ export interface PlanVersion {
 export class VersionManager {
     private historyDir: string;
 
-    constructor() {
+    constructor(baseDir?: string) {
+        if (baseDir) {
+            this.historyDir = path.join(baseDir, '.layr', 'history');
+            return;
+        }
+
         const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
         if (!workspacePath) {
             this.historyDir = '';
+            // Only show warning if we are not in a test environment (implied by no baseDir injected but also check context?)
+            // Actually, showing warning is fine.
             vscode.window.showWarningMessage(
                 'Layr: No workspace folder found. Plan version history will not be saved until you open a workspace folder.',
                 'Learn More'
@@ -63,7 +70,7 @@ export class VersionManager {
     public async saveVersion(plan: ProjectPlan, metadata: PlanVersion['metadata']): Promise<string | null> {
         if (!this.historyDir) {
             this.updateWorkspacePath();
-            if (!this.historyDir) return null;
+            if (!this.historyDir) { return null; }
         }
 
         await this.ensureHistoryDir();
@@ -123,10 +130,10 @@ export class VersionManager {
     }
 
     public async getVersion(id: string): Promise<PlanVersion | null> {
-        if (!this.historyDir) return null;
+        if (!this.historyDir) { return null; }
 
         const versionFile = path.join(this.historyDir, `${id}.json`);
-        if (!fs.existsSync(versionFile)) return null;
+        if (!fs.existsSync(versionFile)) { return null; }
 
         try {
             const content = await fs.promises.readFile(versionFile, 'utf8');
@@ -181,10 +188,10 @@ export class VersionManager {
      * Delete a specific version by ID
      */
     public async deleteVersion(id: string): Promise<boolean> {
-        if (!this.historyDir) return false;
+        if (!this.historyDir) { return false; }
 
         const versionFile = path.join(this.historyDir, `${id}.json`);
-        if (!fs.existsSync(versionFile)) return false;
+        if (!fs.existsSync(versionFile)) { return false; }
 
         try {
             await fs.promises.unlink(versionFile);

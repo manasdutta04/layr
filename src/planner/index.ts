@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ProjectPlan, FileStructureItem, LayrConfig, APIKeyMissingError, AIServiceError, AIProvider, AIProviderType } from './interfaces';
+import { ProjectPlan, FileStructureItem, PlanStep, LayrConfig, APIKeyMissingError, AIServiceError, AIProvider, AIProviderType } from './interfaces';
 
 import { RuleBasedPlanGenerator } from './rules';
 import { getAIProviderFactory } from './providers';
@@ -17,11 +17,17 @@ export class Planner {
     return this.aiModel;
   }
 
-  constructor() {
+  constructor(provider?: AIProvider) {
     // ONLINE ONLY MODE: Disable rule-based generator
     this.ruleGenerator = new RuleBasedPlanGenerator();
     this.config = this.loadConfig();
-    this.initializeAIProvider();
+
+    if (provider) {
+      this.aiProvider = provider;
+      console.log('Planner: Injected AI provider used');
+    } else {
+      this.initializeAIProvider();
+    }
 
     console.log('Planner: ONLINE ONLY MODE - Offline templates disabled');
   }
@@ -430,7 +436,7 @@ Need help? Visit: https://github.com/manasdutta04/layr/issues`;
     }
   }
 
-  private validateFileStructure(items: unknown[]): any[] {
+  private validateFileStructure(items: unknown[]): FileStructureItem[] {
     if (!Array.isArray(items)) { return []; }
 
     return items.map(item => {
@@ -438,13 +444,14 @@ Need help? Visit: https://github.com/manasdutta04/layr/issues`;
       return {
         name: typedItem.name || 'unnamed',
         type: typedItem.type === 'directory' ? 'directory' : 'file',
+        path: typedItem.name || 'unnamed', // Use name as path default
         description: typedItem.description || '',
         children: typedItem.children ? this.validateFileStructure(typedItem.children) : []
       };
     });
   }
 
-  private validateNextSteps(steps: unknown[]): any[] {
+  private validateNextSteps(steps: unknown[]): PlanStep[] {
     if (!Array.isArray(steps)) { return []; }
 
     return steps.map((step, index) => {

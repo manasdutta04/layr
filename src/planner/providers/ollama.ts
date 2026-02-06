@@ -4,27 +4,30 @@ import { AIProvider, AIProviderType, AIServiceError } from '../interfaces';
 export class OllamaProvider implements AIProvider {
   public readonly name = 'Ollama';
   public readonly type: AIProviderType = 'ollama';
-  
+
   private baseUrl: string;
   private modelName: string;
 
-  constructor(baseUrl: string, modelName: string) {
+  private fetcher: typeof fetch;
+
+  constructor(baseUrl: string, modelName: string, fetcher?: typeof fetch) {
     // Remove trailing slash if present and ensure default if empty
     this.baseUrl = (baseUrl || 'http://localhost:11434').replace(/\/$/, '');
     this.modelName = modelName || 'llama3';
+    this.fetcher = fetcher || fetch;
     console.log(`OllamaProvider: Initialized with ${this.baseUrl} using model ${this.modelName}`);
   }
 
   async isAvailable(): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/tags`);
+      const response = await this.fetcher(`${this.baseUrl}/api/tags`);
       return response.ok;
-    } catch (e) {
+    } catch (_e) {
       return false;
     }
   }
 
-  async validateApiKey(apiKey: string): Promise<boolean> {
+  async validateApiKey(_apiKey: string): Promise<boolean> {
     // Ollama typically doesn't use API keys for local instances,
     // so we simply check if the server is reachable.
     return this.isAvailable();
@@ -35,7 +38,7 @@ export class OllamaProvider implements AIProvider {
     return ['llama3', 'mistral', 'codellama', 'deepseek-coder'];
   }
 
-  async generatePlan(prompt: string, options?: any): Promise<string> {
+  async generatePlan(prompt: string, _options?: { planSize?: string, planType?: string }): Promise<string> {
     try {
       // We use the exact same system prompt as GeminiProvider to ensure consistency
       const systemPrompt = `Create a comprehensive and detailed project plan in JSON format for: "${prompt}"
@@ -172,7 +175,7 @@ CRITICAL: Return ONLY valid JSON. Do not wrap in markdown code blocks. Do not in
 }`;
 
       // Call Ollama API
-      const response = await fetch(`${this.baseUrl}/api/generate`, {
+      const response = await this.fetcher(`${this.baseUrl}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -191,7 +194,7 @@ CRITICAL: Return ONLY valid JSON. Do not wrap in markdown code blocks. Do not in
         throw new Error(`Ollama API Error: ${response.statusText}`);
       }
 
-      const data = await response.json() as any;
+      const data = await response.json() as { response: string };
       const jsonText = data.response;
 
       console.log('OllamaProvider: Raw response length:', jsonText.length);
@@ -228,7 +231,7 @@ CRITICAL INSTRUCTIONS:
 4. Do not include any introductory or concluding text.
 5. If the user asks for more detail, be specific and technical.`;
 
-      const response = await fetch(`${this.baseUrl}/api/generate`, {
+      const response = await this.fetcher(`${this.baseUrl}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -245,9 +248,9 @@ CRITICAL INSTRUCTIONS:
         throw new Error(`Ollama API Error: ${response.statusText}`);
       }
 
-      const data = await response.json() as any;
+      const data = await response.json() as { response: string };
       return data.response;
-      
+
     } catch (error) {
       console.error('OllamaProvider.refineSection error:', error);
       throw new AIServiceError(error instanceof Error ? error.message : String(error));
