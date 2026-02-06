@@ -123,7 +123,7 @@ export class PlanGenerationError extends Error {
 }
 
 export class APIKeyMissingError extends PlanGenerationError {
-  constructor(provider?: AIProviderType) {
+  constructor(_provider?: AIProviderType) {
     const message = `AI provider is not configured or unavailable.
 
 How to fix:
