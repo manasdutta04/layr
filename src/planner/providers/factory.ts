@@ -1,4 +1,4 @@
-import { AIProvider, AIProviderFactory, AIProviderType, UnsupportedProviderError } from '../interfaces';
+import { AIProvider, AIProviderFactory, AIProviderType, UnsupportedProviderError, GeminiConfig, GroqConfig } from '../interfaces';
 import { GeminiProvider } from './gemini';
 import { GroqProvider } from './groq';
 // FIXED: Import the new provider class
@@ -27,12 +27,12 @@ export class DefaultAIProviderFactory implements AIProviderFactory {
       case 'gemini':
         return new GeminiProvider({
           apiKey: config.apiKey || '',
-          model: config.model as any
+          model: config.model as GeminiConfig['model']
         });
       case 'groq':
         return new GroqProvider({
           apiKey: config.apiKey || '',
-          model: config.model as any
+          model: config.model as GroqConfig['model']
         });
       case 'ollama': {
         // Extract the specific config values needed for Ollama
