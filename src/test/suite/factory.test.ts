@@ -41,9 +41,10 @@ suite('AIProviderFactory Test Suite', () => {
     test('createProvider throws on unsupported type', () => {
         const factory = DefaultAIProviderFactory.getInstance();
         try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             factory.createProvider('invalid' as any, {});
             assert.fail('Should have thrown error');
-        } catch (error: any) {
+        } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
             assert.ok(error.name === 'UnsupportedProviderError');
         }
     });
