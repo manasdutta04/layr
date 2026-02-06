@@ -146,10 +146,23 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     // --- SECURITY SANITIZATION START ---
+    // [FIXED] Updated to use the same Proceed/Cancel logic as createPlan for UX consistency
     const { sanitizedText: safeRefinement, wasRedacted } = SanitizationService.sanitize(refinementPrompt);
     
+    let finalRefinement = safeRefinement.trim();
+
     if (wasRedacted) {
-         vscode.window.showInformationMessage('Layr Security: Sensitive data (emails/IPs/keys) in your refinement prompt was redacted.');
+         const proceed = await vscode.window.showWarningMessage(
+             'Layr Security: Sensitive info (emails/IPs/keys) was detected in your refinement prompt and has been redacted.',
+             'View Redacted Prompt',
+             'Proceed',
+             'Cancel'
+         );
+
+         if (proceed === 'Cancel') return;
+         if (proceed === 'View Redacted Prompt') {
+            await vscode.window.showInformationMessage(`Sending: "${finalRefinement}"`);
+         }
     }
     // --- SECURITY SANITIZATION END ---
 
@@ -161,8 +174,8 @@ export function activate(context: vscode.ExtensionContext) {
     }, async (progress) => {
       progress.report({ message: 'AI is thinking...' });
 
-      // Use safeRefinement instead of raw refinementPrompt
-      const refinedContent = await PlanRefiner.refine(document, section, safeRefinement);
+      // Use finalRefinement instead of raw refinementPrompt
+      const refinedContent = await PlanRefiner.refine(document, section, finalRefinement);
 
       if (refinedContent) {
         await PlanRefiner.showDiffAndApply(document, section, refinedContent);
