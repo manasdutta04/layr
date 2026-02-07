@@ -16,6 +16,7 @@ export class OllamaProvider implements AIProvider {
     // Remove trailing slash if present and ensure default if empty
     this.baseUrl = (baseUrl || 'http://localhost:11434').replace(/\/$/, '');
     this.modelName = modelName || 'llama3';
+    this.fetcher = fetcher || fetch;
     logger.info(`OllamaProvider: Initialized with ${this.baseUrl} using model ${this.modelName}`);
   }
 
@@ -205,7 +206,9 @@ CRITICAL: Return ONLY valid JSON. Do not wrap in markdown code blocks. Do not in
       return jsonText;
 
     } catch (error) {
-      if (error instanceof AIProviderError) throw error;
+      if (error instanceof AIProviderError) {
+        throw error;
+      }
       throw new AIProviderError(
         error instanceof Error ? error.message : 'Unknown error generating plan with Ollama',
         this.name
@@ -255,7 +258,9 @@ CRITICAL INSTRUCTIONS:
 
     } catch (error) {
       logger.error('OllamaProvider.refineSection error:', error);
-      if (error instanceof AIProviderError) throw error;
+      if (error instanceof AIProviderError) {
+        throw error;
+      }
       throw new AIProviderError(error instanceof Error ? error.message : String(error), this.name);
     }
   }

@@ -12,6 +12,12 @@ export class AIProviderError extends LayrError {
   }
 }
 
+export class UnsupportedProviderError extends AIProviderError {
+  constructor(provider: string) {
+    super(`Unsupported AI provider: "${provider}"`, 'Factory');
+  }
+}
+
 export class TemplateError extends LayrError {
   constructor(message: string, code?: string) {
     super(message, code);

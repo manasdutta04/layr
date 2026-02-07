@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { planner } from './index';
 import { logger } from '../utils/logger';
-import { AIProviderError } from '../utils/errors';
 
 export interface PlanSection {
   title: string;

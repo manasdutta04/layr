@@ -5,7 +5,6 @@ import * as path from 'path';
 import { randomUUID } from 'crypto';
 import { ProjectPlan } from '../planner/interfaces';
 import { logger } from '../utils/logger';
-import { FileSystemError } from '../utils/errors';
 
 export interface PlanVersion {
     id: string; // UUID-based unique id

@@ -24,7 +24,7 @@ export class Logger {
     return Logger.instance;
   }
 
-  private log(level: LogLevel, message: string, ...args: any[]): void {
+  private log(level: LogLevel, message: string, ...args: unknown[]): void {
     const timestamp = new Date().toISOString();
     const formattedArgs = args.length > 0 ? ` ${args.map(arg => 
       arg instanceof Error ? arg.stack || arg.message : JSON.stringify(arg)
@@ -51,19 +51,19 @@ export class Logger {
     }
   }
 
-  public debug(message: string, ...args: any[]): void {
+  public debug(message: string, ...args: unknown[]): void {
     this.log(LogLevel.Debug, message, ...args);
   }
 
-  public info(message: string, ...args: any[]): void {
+  public info(message: string, ...args: unknown[]): void {
     this.log(LogLevel.Info, message, ...args);
   }
 
-  public warn(message: string, ...args: any[]): void {
+  public warn(message: string, ...args: unknown[]): void {
     this.log(LogLevel.Warn, message, ...args);
   }
 
-  public error(message: string, error?: any, ...args: any[]): void {
+  public error(message: string, error?: unknown, ...args: unknown[]): void {
     this.log(LogLevel.Error, message, error, ...args);
   }
 

@@ -1,10 +1,11 @@
-import { AIProvider, AIProviderFactory, AIProviderType, UnsupportedProviderError, GeminiConfig, GroqConfig } from '../interfaces';
+import * as vscode from 'vscode';
+import { AIProvider, AIProviderFactory, AIProviderType, GeminiConfig, GroqConfig } from '../interfaces';
 import { GeminiProvider } from './gemini';
 import { GroqProvider } from './groq';
 // FIXED: Import the new provider class
 import { OllamaProvider } from './ollama';
 import { logger } from '../../utils/logger';
-import { AIProviderError } from '../../utils/errors';
+import { AIProviderError, UnsupportedProviderError } from '../../utils/errors';
 
 /**
  * Factory for creating AI providers
@@ -44,18 +45,19 @@ export class DefaultAIProviderFactory implements AIProviderFactory {
         // FIXED: Return the new OllamaProvider instance
         return new OllamaProvider(baseUrl, model);
       }
-      default:
+      default: {
         const errorMsg = `Unsupported AI provider: "${type}"`;
         logger.error(`AIProviderFactory: ${errorMsg}`);
         
         const action = 'Show Logs';
-        vscode.window.showErrorMessage(errorMsg, action).then(selected => {
+        vscode.window.showErrorMessage(errorMsg, action).then((selected: string | undefined) => {
           if (selected === action) {
             logger.show();
           }
         });
         
-        throw new AIProviderError(errorMsg, 'Factory');
+        throw new UnsupportedProviderError(type);
+      }
     }
   }
 

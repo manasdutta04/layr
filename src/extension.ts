@@ -12,7 +12,6 @@ import { VersionManager } from './version-control/VersionManager';
 import { PlanDiffProvider } from './version-control/diffProvider';
 import { HistoryView } from './version-control/HistoryView';
 import { logger } from './utils/logger';
-import { LayrError } from './utils/errors';
 
 /**
  * This method is called when the extension is activated

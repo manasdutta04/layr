@@ -736,12 +736,14 @@ CRITICAL INSTRUCTIONS:
         throw new AIProviderError(`API request failed with status ${response.status}: ${errorText}`, this.name);
       }
 
-      const data = await response.json() as any;
+      const data = await response.json() as { content?: string };
       logger.debug('GroqProvider: Section refined successfully');
       return data.content || '';
     } catch (error) {
       logger.error('GroqProvider.refineSection error:', error);
-      if (error instanceof AIProviderError) throw error;
+      if (error instanceof AIProviderError) {
+        throw error;
+      }
       throw new AIProviderError(error instanceof Error ? error.message : String(error), this.name);
     }
   }

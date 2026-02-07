@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { TemplateManager } from './templateManager';
 import { logger } from '../utils/logger';
-import { TemplateError } from '../utils/errors';
+import { PlanTemplate } from './builtinTemplates';
 
 export class TemplateBrowser {
     private panel: vscode.WebviewPanel | undefined;

@@ -35,7 +35,9 @@ export class TemplateManager {
     private loadUserTemplates(): PlanTemplate[] {
         const templates: PlanTemplate[] = [];
         try {
-            if (!fs.existsSync(this.localTemplatesPath)) return [];
+            if (!fs.existsSync(this.localTemplatesPath)) {
+                return [];
+            }
             const files = fs.readdirSync(this.localTemplatesPath);
             for (const file of files) {
                 if (file.endsWith('.json')) {

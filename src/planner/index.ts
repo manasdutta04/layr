@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
-import { ProjectPlan, LayrConfig, PlanGenerator, AIProvider, AIProviderType } from './interfaces';
-import { GeminiPlanGenerator } from './ai';
+import { ProjectPlan, LayrConfig, AIProvider, AIProviderType, FileStructureItem, PlanStep } from './interfaces';
 import { RuleBasedPlanGenerator } from './rules';
 import { getAIProviderFactory } from './providers';
 import { logger } from '../utils/logger';
