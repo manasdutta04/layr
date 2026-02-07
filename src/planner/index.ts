@@ -12,6 +12,7 @@ export class Planner {
   private ruleGenerator: RuleBasedPlanGenerator;
   private config: LayrConfig;
   private aiModel!: string;
+  private isProviderInjected: boolean = false;
 
   public getAIModel(): string {
     return this.aiModel;
@@ -24,6 +25,7 @@ export class Planner {
 
     if (provider) {
       this.aiProvider = provider;
+      this.isProviderInjected = true;
       console.log('Planner: Injected AI provider used');
     } else {
       this.initializeAIProvider();
@@ -38,8 +40,10 @@ export class Planner {
   async generatePlan(prompt: string): Promise<ProjectPlan> {
     console.log('Planner.generatePlan: ONLINE ONLY MODE - Starting plan generation');
 
-    // Force refresh config to ensure we have the latest API key
-    this.refreshConfig();
+    // Force refresh config to ensure we have the latest API key (skip if provider was injected for testing)
+    if (!this.isProviderInjected) {
+      this.refreshConfig();
+    }
 
     // Get user settings (with fallback for test environment)
     let planSize = 'Normal';
@@ -254,7 +258,10 @@ Need help? Visit: https://github.com/manasdutta04/layr/issues`;
    */
   refreshConfig(): void {
     this.config = this.loadConfig();
-    this.initializeAIProvider();
+    // Only reinitialize provider if it wasn't injected for testing
+    if (!this.isProviderInjected) {
+      this.initializeAIProvider();
+    }
   }
 
   /**
