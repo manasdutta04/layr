@@ -1,5 +1,3 @@
-import * as vscode from 'vscode';
-
 export class SanitizationService {
     // Regex patterns for common sensitive data
     private static readonly PATTERNS = {
@@ -12,7 +10,7 @@ export class SanitizationService {
         
         // Common API Keys
         // Added: AKIA (AWS), AIza (Google Firebase/Cloud)
-        API_KEY: /\b(sk-|ghp_|gho_|xoxb-|xoxp-|AKIA|AIza)[a-zA-Z0-9_\-]{20,}\b/g
+        API_KEY: /\b(sk-|ghp_|gho_|xoxb-|xoxp-|AKIA|AIza)[a-zA-Z0-9_-]{20,}\b/g
     };
 
     /**

@@ -149,7 +149,7 @@ export function activate(context: vscode.ExtensionContext) {
     // [FIXED] Updated to use the same Proceed/Cancel logic as createPlan for UX consistency
     const { sanitizedText: safeRefinement, wasRedacted } = SanitizationService.sanitize(refinementPrompt);
     
-    let finalRefinement = safeRefinement.trim();
+    const finalRefinement = safeRefinement.trim();
 
     if (wasRedacted) {
          const proceed = await vscode.window.showWarningMessage(
@@ -159,7 +159,9 @@ export function activate(context: vscode.ExtensionContext) {
              'Cancel'
          );
 
-         if (proceed === 'Cancel') return;
+         if (proceed === 'Cancel') {
+            return;
+        }
          if (proceed === 'View Redacted Prompt') {
             await vscode.window.showInformationMessage(`Sending: "${finalRefinement}"`);
          }
@@ -209,7 +211,7 @@ export function activate(context: vscode.ExtensionContext) {
       // --- SECURITY SANITIZATION START ---
       const { sanitizedText, wasRedacted } = SanitizationService.sanitize(prompt);
       
-      let finalPrompt = sanitizedText.trim();
+      const finalPrompt = sanitizedText.trim();
 
       if (wasRedacted) {
           const proceed = await vscode.window.showWarningMessage(
@@ -219,7 +221,9 @@ export function activate(context: vscode.ExtensionContext) {
               'Cancel'
           );
 
-          if (proceed === 'Cancel') return;
+          if (proceed === 'Cancel') {
+            return;
+        }
           if (proceed === 'View Redacted Prompt') {
              // Show them what we are sending but continue
              await vscode.window.showInformationMessage(`Sending: "${finalPrompt}"`);
