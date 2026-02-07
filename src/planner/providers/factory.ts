@@ -1,5 +1,4 @@
-import * as vscode from 'vscode';
-import { AIProvider, AIProviderFactory, AIProviderType } from '../interfaces';
+import { AIProvider, AIProviderFactory, AIProviderType, UnsupportedProviderError, GeminiConfig, GroqConfig } from '../interfaces';
 import { GeminiProvider } from './gemini';
 import { GroqProvider } from './groq';
 // FIXED: Import the new provider class
@@ -13,7 +12,7 @@ import { AIProviderError } from '../../utils/errors';
 export class DefaultAIProviderFactory implements AIProviderFactory {
   private static instance: DefaultAIProviderFactory;
 
-  private constructor() {}
+  private constructor() { }
 
   public static getInstance(): DefaultAIProviderFactory {
     if (!DefaultAIProviderFactory.instance) {
@@ -22,22 +21,29 @@ export class DefaultAIProviderFactory implements AIProviderFactory {
     return DefaultAIProviderFactory.instance;
   }
 
-  createProvider(type: AIProviderType | string, config: any): AIProvider {
+  createProvider(type: AIProviderType | string, config: { apiKey?: string; model?: string; customBaseUrl?: string; modelName?: string }): AIProvider {
     // Normalize type to lowercase to ensure matching works (Gemini vs gemini)
     const normalizedType = type.toLowerCase();
     logger.debug(`AIProviderFactory: Creating provider for type: ${normalizedType}`);
 
     switch (normalizedType) {
       case 'gemini':
-        return new GeminiProvider(config);
+        return new GeminiProvider({
+          apiKey: config.apiKey || '',
+          model: config.model as GeminiConfig['model']
+        });
       case 'groq':
-        return new GroqProvider(config);
-      case 'ollama':
+        return new GroqProvider({
+          apiKey: config.apiKey || '',
+          model: config.model as GroqConfig['model']
+        });
+      case 'ollama': {
         // Extract the specific config values needed for Ollama
         const baseUrl = config.customBaseUrl || 'http://localhost:11434';
         const model = config.modelName || 'llama3';
         // FIXED: Return the new OllamaProvider instance
         return new OllamaProvider(baseUrl, model);
+      }
       default:
         const errorMsg = `Unsupported AI provider: "${type}"`;
         logger.error(`AIProviderFactory: ${errorMsg}`);

@@ -9,7 +9,7 @@ export class TemplateBrowser {
     constructor(
         private readonly context: vscode.ExtensionContext,
         private readonly templateManager: TemplateManager
-    ) {}
+    ) { }
 
     public open() {
         if (this.panel) {
@@ -45,7 +45,7 @@ export class TemplateBrowser {
     }
 
     private updateContent() {
-        if (!this.panel) return;
+        if (!this.panel) { return; }
         const templates = this.templateManager.getAllTemplates();
         this.panel.webview.html = this.getHtmlForWebview(templates);
     }
@@ -80,7 +80,7 @@ export class TemplateBrowser {
         }
     }
 
-    private getHtmlForWebview(templates: any[]): string {
+    private getHtmlForWebview(templates: PlanTemplate[]): string {
         // Simple CSS for the cards
         const style = `
             body { font-family: var(--vscode-font-family); padding: 20px; color: var(--vscode-editor-foreground); }

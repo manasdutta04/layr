@@ -27,7 +27,7 @@ export interface GroqConfig {
 export interface LayrConfig {
   // Legacy support
   geminiApiKey?: string;
-  
+
   // Multi-provider configuration
   aiProvider?: AIProviderType;
   gemini?: GeminiConfig;
@@ -76,8 +76,8 @@ export interface PlanStep {
 export interface AIProvider {
   readonly name: string;
   readonly type: AIProviderType;
-  
-  generatePlan(prompt: string, options?: any): Promise<string>;
+
+  generatePlan(prompt: string, options?: { planSize?: string, planType?: string }): Promise<string>;
   refineSection(sectionContent: string, refinementPrompt: string, fullContext: string): Promise<string>;
   validateApiKey(apiKey: string): Promise<boolean>;
   getSupportedModels(): string[];
@@ -96,7 +96,7 @@ export interface PlanGenerator {
  * AI provider factory interface
  */
 export interface AIProviderFactory {
-  createProvider(type: AIProviderType, config: any): AIProvider;
+  createProvider(type: AIProviderType, config: { apiKey?: string, model?: string, customBaseUrl?: string, modelName?: string }): AIProvider;
   getSupportedProviders(): AIProviderType[];
 }
 

@@ -85,16 +85,16 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     const name = await vscode.window.showInputBox({ prompt: 'Enter template name' });
-    if (!name) return;
+    if (!name) { return; }
 
     const category = await vscode.window.showQuickPick(
-      ['Web', 'Backend', 'Mobile', 'Data', 'DevOps', 'Desktop'], 
+      ['Web', 'Backend', 'Mobile', 'Data', 'DevOps', 'Desktop'],
       { placeHolder: 'Select a category' }
-    );
-    if (!category) return;
+    ) as 'Web' | 'Backend' | 'Mobile' | 'Data' | 'DevOps' | 'Desktop' | undefined;
+
+    if (!category) { return; }
 
     const content = editor.document.getText();
-    // @ts-ignore
     await templateManager.saveTemplate(name, content, category);
   });
 
@@ -232,7 +232,7 @@ export function activate(context: vscode.ExtensionContext) {
           updateProgress(95, 'Saving version history...');
 
           // Get the actual model name from planner config
-          const modelName = (planner as any).aiModel || 'groq-llama-3.3-70b-versatile';
+          const modelName = planner.getAIModel() || 'groq-llama-3.3-70b-versatile';
 
           // Save the initial version
           await versionManager.saveVersion(plan, {
@@ -432,7 +432,7 @@ export function activate(context: vscode.ExtensionContext) {
               await vscode.commands.executeCommand(command);
               chatOpened = true;
               break;
-            } catch (e) {
+            } catch (_e) {
               // Try next command
             }
           }
@@ -453,7 +453,7 @@ export function activate(context: vscode.ExtensionContext) {
           if (action === 'Try Opening Chat') {
             try {
               await vscode.commands.executeCommand('workbench.action.chat.open');
-            } catch (e) {
+            } catch (_e) {
               vscode.window.showInformationMessage(
                 'Could not automatically open chat. Please open your AI assistant manually and paste the plan from clipboard.\n\nGuide: https://github.com/manasdutta04/layr#implementation'
               );
@@ -527,7 +527,7 @@ export function activate(context: vscode.ExtensionContext) {
         location: vscode.ProgressLocation.Notification,
         title: `Exporting plan to ${format}...`,
         cancellable: false
-      }, async (progress) => {
+      }, async (_progress) => {
         try {
           const md = new MarkdownIt({
             html: true,
@@ -663,7 +663,7 @@ export function activate(context: vscode.ExtensionContext) {
               defaultUri: vscode.Uri.file('project-plan.html'),
               filters: { 'HTML Files': ['html'] }
             });
-            if (!uri) return;
+            if (!uri) { return; }
             savePath = uri.fsPath;
           } else {
             // Save in same directory
@@ -676,7 +676,7 @@ export function activate(context: vscode.ExtensionContext) {
                 `File ${path.basename(savePath)} already exists. Overwrite?`,
                 'Yes', 'No'
               );
-              if (overwrite !== 'Yes') return;
+              if (overwrite !== 'Yes') { return; }
             }
           }
 
@@ -718,7 +718,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // 2. Append the report to the bottom of the file
     editor.edit(editBuilder => {
-      const lastLine = document.lineAt(document.lineCount - 1);
+      // Last line is calculated but not used variable remove
       const position = new vscode.Position(document.lineCount, 0);
       editBuilder.insert(position, costReport);
     });
@@ -787,7 +787,7 @@ export function activate(context: vscode.ExtensionContext) {
           };
 
           // Get the actual model name from planner config
-          const modelName = (planner as any).aiModel || 'groq-llama-3.3-70b-versatile';
+          const modelName = planner.getAIModel() || 'groq-llama-3.3-70b-versatile';
 
           await versionManager.saveVersion(plan, {
             description: 'Plan User Refinement',
@@ -894,7 +894,7 @@ Your plan has been copied to the clipboard! Here's how to use it with AI assista
 Happy coding! 🚀
   `;
 
-  const doc = vscode.workspace.openTextDocument({
+  vscode.workspace.openTextDocument({
     content: instructions.trim(),
     language: 'markdown'
   }).then(doc => {

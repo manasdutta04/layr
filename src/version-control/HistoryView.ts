@@ -121,7 +121,7 @@ export class HistoryView {
 
     private async _restoreVersion(id: string) {
         const version = await this.versionManager.getVersion(id);
-        if (!version) return;
+        if (!version) {return;}
 
         // Restore means putting it into a new editor or replacing current?
         // Let's open a new untitled file with the content for safety

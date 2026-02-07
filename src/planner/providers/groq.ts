@@ -15,17 +15,20 @@ export class GroqProvider implements AIProvider {
   private proxyURL: string;
   private useProxy: boolean;
 
-  constructor(config: { apiKey?: string; model?: string; baseURL?: string }) {
+  private fetcher: typeof fetch;
+
+  constructor(config: { apiKey?: string; model?: string; baseURL?: string }, fetcher?: typeof fetch) {
     this.model = config.model || 'llama-3.3-70b-versatile';
-    
+
     // Secure proxy endpoint - keeps API key safe on server
     this.proxyURL = process.env.LAYR_PROXY_URL || 'https://layr-api.vercel.app/api/chat';
-    
+
     // Use proxy if URL is configured, otherwise this will fail gracefully
     this.useProxy = this.proxyURL !== 'YOUR_VERCEL_URL_HERE';
+    this.fetcher = fetcher || fetch;
   }
 
-  async generatePlan(prompt: string, options?: any): Promise<string> {
+  async generatePlan(prompt: string, options?: { planSize?: string, planType?: string }): Promise<string> {
     if (!this.useProxy) {
       throw new AIProviderError(
         'Layr AI backend proxy is not configured. ' +
@@ -40,11 +43,11 @@ export class GroqProvider implements AIProvider {
       // Extract settings from options
       const planSize = options?.planSize || 'Normal';
       const planType = options?.planType || 'SaaS';
-      
+
       // Build size-specific instructions
       let sizeInstructions = '';
       let maxTokens = 5000;
-      
+
       if (planSize === 'Concise') {
         maxTokens = 2500;
         sizeInstructions = `
@@ -80,10 +83,10 @@ SIZE SPECIFICATIONS:
 - File Structure: Complete structure with all subdirectories
 - Provide extensive explanations and examples`;
       }
-      
+
       // Build type-specific instructions
       let typeInstructions = '';
-      
+
       if (planType === 'Hobby') {
         typeInstructions = `
 PROJECT TYPE: HOBBY/LEARNING PROJECT
@@ -222,8 +225,8 @@ ${planSize === 'Concise' ? '[Brief 2-3 sentence description of architecture patt
 ${planSize === 'Concise' ? '1. [Component]: [Brief description]\n2. [Component]: [Brief description]\n3. [Component]: [Brief description]\n[List 3-4 components]' : planSize === 'Normal' ? '1. **[Component]**: [Description of purpose and responsibilities]\n2. **[Component]**: [Description of purpose and responsibilities]\n[List 4-6 components with explanations]' : '1. **[Component Name]**: [Detailed description of purpose, responsibilities, and interactions]\n2. **[Component Name]**: [Detailed description of purpose, responsibilities, and interactions]\n[List 6-10 key components with comprehensive explanations]'}
 
 ## File Structure
-${planSize === 'Concise' ? 
-`\`\`\`
+${planSize === 'Concise' ?
+          `\`\`\`
 project-root/
 ├── src/
 │   ├── components/      # UI components
@@ -233,9 +236,9 @@ project-root/
 ├── public/             # Static files
 ├── package.json
 └── README.md
-\`\`\`` : 
-planSize === 'Normal' ?
-`\`\`\`
+\`\`\`` :
+          planSize === 'Normal' ?
+            `\`\`\`
 project-root/
 ├── src/
 │   ├── components/          # Reusable UI components
@@ -254,7 +257,7 @@ project-root/
 ├── tsconfig.json
 └── README.md
 \`\`\`` :
-`\`\`\`
+            `\`\`\`
 project-root/
 ├── src/
 │   ├── components/          # Reusable UI components
@@ -317,7 +320,7 @@ project-root/
 ## Implementation Phases
 
 ${planSize === 'Concise' && (planType === 'Hobby' || planType === 'Prototype') ?
-`### Phase 1: Setup & Core (Week 1)
+          `### Phase 1: Setup & Core (Week 1)
 - [ ] Set up project structure and dependencies
 - [ ] Build basic UI components
 - [ ] Implement core functionality
@@ -329,8 +332,8 @@ ${planSize === 'Concise' && (planType === 'Hobby' || planType === 'Prototype') ?
 - [ ] Deploy
 **Deliverables:** Deployed application` :
 
-planSize === 'Concise' ?
-`### Phase 1: Foundation (Weeks 1-2)
+          planSize === 'Concise' ?
+            `### Phase 1: Foundation (Weeks 1-2)
 - [ ] Project setup and infrastructure
 - [ ] Core components and routing
 **Deliverables:** Basic structure
@@ -345,8 +348,8 @@ planSize === 'Concise' ?
 - [ ] Deploy to production
 **Deliverables:** Live application` :
 
-planSize === 'Normal' ?
-`### Phase 1: Project Setup & Foundation (Week 1)
+            planSize === 'Normal' ?
+              `### Phase 1: Project Setup & Foundation (Week 1)
 **Objectives:** Establish development environment
 - [ ] Initialize repository and development environment
 - [ ] Set up project structure
@@ -378,7 +381,7 @@ planSize === 'Normal' ?
 - [ ] Deploy to production
 **Deliverables:** Deployed, tested application` :
 
-`### Phase 1: Project Setup & Foundation (Week 1)
+              `### Phase 1: Project Setup & Foundation (Week 1)
 **Objectives:** Establish development environment and basic project structure
 - [ ] Initialize project repository and set up version control
 - [ ] Configure development environment (Node.js, package manager, etc.)
@@ -524,11 +527,11 @@ planSize === 'Normal' ?
 ## Testing Strategy
 
 ${planSize === 'Concise' || planType === 'Hobby' || planType === 'Prototype' ?
-`- Basic unit tests for core functions
+          `- Basic unit tests for core functions
 - Manual testing of main features
 - Target: Working functionality` :
-planSize === 'Normal' ?
-`### Unit Testing
+          planSize === 'Normal' ?
+            `### Unit Testing
 - Test utility functions and components
 - Use Jest/React Testing Library
 - Target: 70%+ coverage
@@ -541,7 +544,7 @@ planSize === 'Normal' ?
 ### E2E Testing
 - Test complete workflows with Cypress/Playwright
 - Verify cross-browser compatibility` :
-`### Unit Testing
+            `### Unit Testing
 - Test all utility functions with 100% coverage
 - Test React components with React Testing Library
 - Mock external dependencies and API calls
@@ -562,11 +565,11 @@ planSize === 'Normal' ?
 ## Deployment Strategy
 
 ${planSize === 'Concise' || planType === 'Hobby' || planType === 'Prototype' ?
-`- Deploy to Vercel/Netlify or similar free hosting
+          `- Deploy to Vercel/Netlify or similar free hosting
 - Simple push-to-deploy workflow
 - Monitor basic errors with free tools` :
-planSize === 'Normal' ?
-`### Development Environment
+          planSize === 'Normal' ?
+            `### Development Environment
 - Continuous deployment on merges
 - Used for testing and QA
 
@@ -574,7 +577,7 @@ planSize === 'Normal' ?
 - Deploy via CI/CD pipeline
 - Monitor with error tracking
 - Automated rollback on failures` :
-`### Development Environment
+            `### Development Environment
 - Continuous deployment on feature branch merges
 - Accessible at: [dev-url]
 - Used for testing and QA
@@ -593,11 +596,11 @@ planSize === 'Normal' ?
 ## Maintenance & Future Enhancements
 
 ${planSize === 'Concise' || planType === 'Hobby' || planType === 'Prototype' ?
-`- Fix bugs as they arise
+          `- Fix bugs as they arise
 - Update dependencies quarterly
 - Consider future enhancements based on feedback` :
-planSize === 'Normal' ?
-`### Regular Maintenance
+          planSize === 'Normal' ?
+            `### Regular Maintenance
 - Monthly dependency updates
 - Bug fixes and minor improvements
 - Performance monitoring
@@ -606,7 +609,7 @@ planSize === 'Normal' ?
 - [2-3 future feature ideas]
 - [Integration opportunities]
 - [Scalability improvements]` :
-`### Regular Maintenance
+            `### Regular Maintenance
 - Weekly dependency updates
 - Monthly security audits
 - Performance monitoring and optimization
@@ -622,7 +625,7 @@ planSize === 'Normal' ?
 CRITICAL REMINDER: Your response MUST be ${planSize === 'Concise' ? 'EXACTLY 80-100 lines' : planSize === 'Normal' ? 'EXACTLY 180-240 lines' : '300+ lines'}. Count your lines and STOP when you reach the limit.`;
 
       // Call the secure proxy endpoint instead of Groq directly
-      const response = await fetch(this.proxyURL, {
+      const response = await this.fetcher(this.proxyURL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -642,7 +645,7 @@ CRITICAL REMINDER: Your response MUST be ${planSize === 'Concise' ? 'EXACTLY 80-
         logger.error('GroqProvider: Proxy API Error:', errorText);
         
         let userMsg = `API request failed (${response.status}): ${errorText}`;
-        
+
         // Provide generic guidance for common HTTP errors
         if (response.status === 401 || response.status === 403) {
           userMsg = `Authentication failed (${response.status}). Please verify your configuration.`;
@@ -659,9 +662,9 @@ CRITICAL REMINDER: Your response MUST be ${planSize === 'Concise' ? 'EXACTLY 80-
         throw new AIProviderError(userMsg, this.name);
       }
 
-      const data = await response.json() as any;
+      const data = await response.json() as { content?: string };
       const content = data.content || '';
-      
+
       if (!content) {
         throw new AIProviderError('AI service returned an empty response. This might indicate a temporary service issue. Please try again.', this.name);
       }
@@ -672,11 +675,11 @@ CRITICAL REMINDER: Your response MUST be ${planSize === 'Concise' ? 'EXACTLY 80-
       if (error instanceof AIProviderError) {
         throw error;
       }
-      
+
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       logger.error('GroqProvider: Unexpected error:', error);
       let userMsg = `Failed to generate plan: ${errorMsg}`;
-      
+
       // Provide generic guidance for network errors
       if (errorMsg.includes('fetch') || errorMsg.includes('network') || errorMsg.includes('ECONNREFUSED')) {
         userMsg = 'Network connection error. Check your internet connection and firewall settings.';
@@ -715,7 +718,7 @@ CRITICAL INSTRUCTIONS:
 4. Do not include any introductory or concluding text.
 5. If the user asks for more detail, be specific and technical.`;
 
-      const response = await fetch(this.proxyURL, {
+      const response = await this.fetcher(this.proxyURL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -743,7 +746,7 @@ CRITICAL INSTRUCTIONS:
     }
   }
 
-  async validateApiKey(apiKey: string): Promise<boolean> {
+  async validateApiKey(_apiKey: string): Promise<boolean> {
     // With proxy, we don't validate keys client-side
     // Just check if proxy is configured
     return this.useProxy;
