@@ -26,6 +26,7 @@
     "onCommand:layr.executePlan",
     "onCommand:layr.exportPlan",
     "onCommand:layr.viewPlanHistory",
+    "onCommand:layr.copyLogs",
     "onStartupFinished"
   ],
   "main": "./out/extension.js",
@@ -83,6 +84,13 @@
         "title": "Layr: View Plan History",
         "category": "Layr",
         "icon": "$(history)"
+      }
+      ,
+      {
+        "command": "layr.copyLogs",
+        "title": "Layr: Copy Logs",
+        "category": "Layr",
+        "icon": "$(clippy)"
       }
     ],
     "keybindings": [

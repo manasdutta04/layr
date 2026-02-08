@@ -19,8 +19,8 @@ export class GeminiPlanGenerator implements PlanGenerator {
     // 3. Initialize Cache Singleton
     this.cache = PlanCache.getInstance();
 
-    console.log('GeminiPlanGenerator: API key received:', apiKey ? '***configured***' : 'empty');
-    console.log('GeminiPlanGenerator: API key length:', apiKey?.length || 0);
+    logger.debug('GeminiPlanGenerator: API key received:', apiKey ? '***configured***' : 'empty');
+    logger.debug('GeminiPlanGenerator: API key length:', apiKey?.length || 0);
 
     if (apiKey && apiKey.trim() !== '' && apiKey !== 'your_api_key_here') {
       this.genAI = new GoogleGenerativeAI(apiKey);

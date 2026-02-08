@@ -27,19 +27,19 @@ export class Planner {
     if (provider) {
       this.aiProvider = provider;
       this.isProviderInjected = true;
-      console.log('Planner: Injected AI provider used');
+      logger.info('Planner: Injected AI provider used');
     } else {
       this.initializeAIProvider();
     }
 
-    console.log('Planner: ONLINE ONLY MODE - Offline templates disabled');
+    logger.info('Planner: ONLINE ONLY MODE - Offline templates disabled');
   }
 
   /**
    * Generate a project plan from a natural language prompt - ONLINE ONLY MODE
    */
   async generatePlan(prompt: string): Promise<ProjectPlan> {
-    console.log('Planner.generatePlan: ONLINE ONLY MODE - Starting plan generation');
+    logger.info('Planner.generatePlan: ONLINE ONLY MODE - Starting plan generation');
 
     // Force refresh config to ensure we have the latest API key (skip if provider was injected for testing)
     if (!this.isProviderInjected) {
@@ -55,13 +55,13 @@ export class Planner {
       planType = config.get<string>('planType', 'SaaS');
     } catch (_error) {
       // VS Code API not available (likely in test environment), use defaults
-      console.log('Planner.generatePlan: Using default planSize and planType (test mode)');
+      logger.debug('Planner.generatePlan: Using default planSize and planType (test mode)');
     }
 
-    console.log('Planner.generatePlan: Plan size:', planSize);
-    console.log('Planner.generatePlan: Plan type:', planType);
-    console.log('Planner.generatePlan: AI provider exists:', !!this.aiProvider);
-    console.log('Planner.generatePlan: AI provider type:', this.aiProvider?.type || 'none');
+    logger.debug('Planner.generatePlan: Plan size:', planSize);
+    logger.debug('Planner.generatePlan: Plan type:', planType);
+    logger.debug('Planner.generatePlan: AI provider exists:', !!this.aiProvider);
+    logger.debug('Planner.generatePlan: AI provider type:', this.aiProvider?.type || 'none');
 
     // REQUIRE AI provider - no offline fallback allowed
     if (!this.aiProvider) {
