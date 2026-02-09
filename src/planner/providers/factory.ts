@@ -5,7 +5,7 @@ import { GroqProvider } from './groq';
 // FIXED: Import the new provider class
 import { OllamaProvider } from './ollama';
 import { logger } from '../../utils/logger';
-import { AIProviderError, UnsupportedProviderError } from '../../utils/errors';
+import { UnsupportedProviderError } from '../../utils/errors';
 
 /**
  * Factory for creating AI providers

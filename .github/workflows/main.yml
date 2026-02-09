@@ -27,7 +27,10 @@ jobs:
     - name: Compile
       run: npm run compile
       
-    - name: Run Tests
+    - name: Run VS Code Integration Tests
       uses: coactions/setup-xvfb@v1
       with:
         run: npm test
+        
+    - name: Run Headless Unit/Integration Tests (Vitest)
+      run: npm run test:ci

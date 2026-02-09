@@ -84,8 +84,7 @@
         "title": "Layr: View Plan History",
         "category": "Layr",
         "icon": "$(history)"
-      }
-      ,
+      },
       {
         "command": "layr.copyLogs",
         "title": "Layr: Copy Logs",
@@ -186,13 +185,17 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
+    "build": "npm run compile",
     "watch": "tsc -watch -p ./",
     "package": "vsce package",
     "publish:vscode": "vsce publish",
     "publish:openvsx": "ovsx publish -p $OVSX_TOKEN",
     "publish:all": "npm run publish:vscode && npm run publish:openvsx",
     "test": "npm run compile && node ./out/test/runTest.js",
-    "lint": "eslint src --ext ts"
+    "lint": "eslint src --ext ts",
+    "test:unit": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:ci": "npm run lint && npm run compile && vitest run --coverage"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
@@ -203,13 +206,16 @@
     "@types/vscode": "^1.74.0",
     "@typescript-eslint/eslint-plugin": "^8.54.0",
     "@typescript-eslint/parser": "^8.54.0",
+    "@vitest/coverage-v8": "^4.0.18",
     "@vscode/test-electron": "^2.5.2",
     "chai": "^6.2.2",
     "eslint": "^9.39.2",
     "glob": "^13.0.1",
-    "mocha": "^11.7.5",
+    "mocha": "^11.3.0",
     "typescript": "^4.9.4",
-    "typescript-eslint": "^8.54.0"
+    "typescript-eslint": "^8.54.0",
+    "vite": "^7.3.1",
+    "vitest": "^4.0.18"
   },
   "dependencies": {
     "@google/generative-ai": "^0.2.1",
