@@ -6,6 +6,15 @@ import { randomUUID } from 'crypto';
 import { ProjectPlan } from '../planner/interfaces';
 import { logger } from '../utils/logger';
 
+/**
+ * Validate that a version ID is a valid UUID to prevent path traversal
+ */
+function isValidVersionId(id: string): boolean {
+    // UUID v4 format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
+}
+
 export interface PlanVersion {
     id: string; // UUID-based unique id
     timestamp: number;
@@ -115,8 +124,21 @@ export class VersionManager {
                 if (file.endsWith('.json')) {
                     try {
                         const content = await fs.promises.readFile(path.join(this.historyDir, file), 'utf8');
-                        const version = JSON.parse(content) as PlanVersion;
-                        versions.push(version);
+                        const parsed = JSON.parse(content);
+                        // Validate required fields exist and are correct types
+                        if (
+                            typeof parsed.id === 'string' &&
+                            typeof parsed.timestamp === 'number' &&
+                            parsed.plan &&
+                            typeof parsed.plan === 'object' &&
+                            parsed.metadata &&
+                            typeof parsed.metadata === 'object' &&
+                            typeof parsed.metadata.description === 'string'
+                        ) {
+                            versions.push(parsed as PlanVersion);
+                        } else {
+                            logger.warn(`VersionManager: Skipping malformed version file ${file}`);
+                        }
                     } catch (e) {
                         logger.warn(`VersionManager: Failed to parse version file ${file}:`, e);
                     }
@@ -132,7 +154,12 @@ export class VersionManager {
     }
 
     public async getVersion(id: string): Promise<PlanVersion | null> {
-        if (!this.historyDir) { return null; }
+        if (!this.historyDir || !isValidVersionId(id)) {
+            if (id && !isValidVersionId(id)) {
+                logger.warn(`VersionManager: Invalid version ID format rejected: ${id.substring(0, 50)}`);
+            }
+            return null;
+        }
 
         const versionFile = path.join(this.historyDir, `${id}.json`);
         if (!fs.existsSync(versionFile)) {
@@ -196,7 +223,12 @@ export class VersionManager {
      * Delete a specific version by ID
      */
     public async deleteVersion(id: string): Promise<boolean> {
-        if (!this.historyDir) { return false; }
+        if (!this.historyDir || !isValidVersionId(id)) {
+            if (id && !isValidVersionId(id)) {
+                logger.warn(`VersionManager: Rejected delete for invalid version ID: ${id.substring(0, 50)}`);
+            }
+            return false;
+        }
 
         const versionFile = path.join(this.historyDir, `${id}.json`);
         if (!fs.existsSync(versionFile)) { return false; }

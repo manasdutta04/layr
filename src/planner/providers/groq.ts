@@ -694,6 +694,13 @@ CRITICAL REMINDER: Your response MUST be ${planSize === 'Concise' ? 'EXACTLY 80-
   }
 
   async refineSection(sectionContent: string, refinementPrompt: string, fullContext: string): Promise<string> {
+    // Basic input sanitization - limit length to prevent abuse
+    const maxSectionLength = 50000;
+    const maxPromptLength = 2000;
+    const sanitizedSection = sectionContent.substring(0, maxSectionLength);
+    const sanitizedPrompt = refinementPrompt.substring(0, maxPromptLength);
+    const sanitizedContext = fullContext.substring(0, maxSectionLength);
+
     if (!this.useProxy) {
       throw new AIProviderError('Layr AI backend proxy is not configured.', this.name);
     }
