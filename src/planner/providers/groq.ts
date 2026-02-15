@@ -20,11 +20,12 @@ export class GroqProvider implements AIProvider {
   constructor(config: { apiKey?: string; model?: string; baseURL?: string }, fetcher?: typeof fetch) {
     this.model = config.model || 'llama-3.3-70b-versatile';
 
-    // Secure proxy endpoint - keeps API key safe on server
-    this.proxyURL = process.env.LAYR_PROXY_URL || 'https://layr-api.vercel.app/api/chat';
+    // Proxy URL should be configured via environment variable
+    // Do not hardcode production URLs in source code
+    this.proxyURL = process.env.LAYR_PROXY_URL || '';
 
-    // Use proxy if URL is configured, otherwise this will fail gracefully
-    this.useProxy = this.proxyURL !== 'YOUR_VERCEL_URL_HERE';
+    // Use proxy only if URL is explicitly configured
+    this.useProxy = this.proxyURL.length > 0 && this.proxyURL !== 'YOUR_VERCEL_URL_HERE';
     this.fetcher = fetcher || fetch;
   }
 

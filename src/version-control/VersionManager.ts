@@ -6,6 +6,14 @@ import { randomUUID } from 'crypto';
 import { ProjectPlan } from '../planner/interfaces';
 import { logger } from '../utils/logger';
 
+/**
+ * Validate that an ID is a safe UUID format to prevent path traversal
+ */
+function isValidVersionId(id: string): boolean {
+    // UUID v4 format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+}
+
 export interface PlanVersion {
     id: string; // UUID-based unique id
     timestamp: number;
@@ -134,6 +142,11 @@ export class VersionManager {
     public async getVersion(id: string): Promise<PlanVersion | null> {
         if (!this.historyDir) { return null; }
 
+        if (!isValidVersionId(id)) {
+            logger.warn(`VersionManager: Invalid version ID format: ${id}`);
+            return null;
+        }
+
         const versionFile = path.join(this.historyDir, `${id}.json`);
         if (!fs.existsSync(versionFile)) {
             logger.warn(`VersionManager: Version file not found: ${id}`);
@@ -197,6 +210,11 @@ export class VersionManager {
      */
     public async deleteVersion(id: string): Promise<boolean> {
         if (!this.historyDir) { return false; }
+
+        if (!isValidVersionId(id)) {
+            logger.warn(`VersionManager: Invalid version ID format for deletion: ${id}`);
+            return false;
+        }
 
         const versionFile = path.join(this.historyDir, `${id}.json`);
         if (!fs.existsSync(versionFile)) { return false; }

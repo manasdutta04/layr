@@ -218,16 +218,21 @@ CRITICAL: Return ONLY valid JSON. Do not wrap in markdown code blocks. Do not in
 
   async refineSection(sectionContent: string, refinementPrompt: string, fullContext: string): Promise<string> {
     try {
+      // Sanitize inputs to reduce prompt injection risk
+      const sanitizedSection = sectionContent.replace(/["""]/g, "'");
+      const sanitizedPrompt = refinementPrompt.replace(/["""]/g, "'");
+      const sanitizedContext = fullContext.substring(0, 10000).replace(/["""]/g, "'");
+
       const systemPrompt = `You are an expert software architect. Refine the following section of a project plan based on the user's request.
       
 Original Section Content:
-"${sectionContent}"
+"${sanitizedSection}"
 
 User's Refinement Request:
-"${refinementPrompt}"
+"${sanitizedPrompt}"
 
 Full Plan Context (for reference):
-"${fullContext}"
+"${sanitizedContext}"
 
 CRITICAL INSTRUCTIONS:
 1. Return ONLY the refined content for this section.

@@ -163,8 +163,8 @@ export class HistoryView {
                     <small>Model: ${escapedModel}</small>
                 </div>
                 <div class="version-actions">
-                     <button onclick="compareWithCurrent('${escapedId}')" title="Compare with active file">Diff with Active</button>
-                     <button onclick="restore('${escapedId}')" title="Restore content">Restore</button>
+                     <button class="action-btn" data-action="compareWithCurrent" data-id="${escapedId}" title="Compare with active file">Diff with Active</button>
+                     <button class="action-btn" data-action="restore" data-id="${escapedId}" title="Restore content">Restore</button>
                 </div>
             </div>
             `;
@@ -175,6 +175,8 @@ export class HistoryView {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta http-equiv="Content-Security-Policy" 
+                  content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-layrhistory';">
             <style>
                 body { font-family: var(--vscode-font-family); padding: 10px; color: var(--vscode-foreground); background-color: var(--vscode-editor-background); }
                 .version-item { border-bottom: 1px solid var(--vscode-panel-border); padding: 10px 0; }
@@ -201,14 +203,19 @@ export class HistoryView {
             <div id="versions">
                 ${rows.length ? rows : '<p>No history available.</p>'}
             </div>
-            <script>
+            <script nonce="layrhistory">
                 const vscode = acquireVsCodeApi();
-                function compareWithCurrent(id) {
-                    vscode.postMessage({ command: 'compareWithCurrent', versionId: id });
-                }
-                function restore(id) {
-                    vscode.postMessage({ command: 'restore', versionId: id });
-                }
+                document.querySelectorAll('.action-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const action = e.currentTarget.getAttribute('data-action');
+                        const id = e.currentTarget.getAttribute('data-id');
+                        if (action === 'compareWithCurrent') {
+                            vscode.postMessage({ command: 'compareWithCurrent', versionId: id });
+                        } else if (action === 'restore') {
+                            vscode.postMessage({ command: 'restore', versionId: id });
+                        }
+                    });
+                });
             </script>
         </body>
         </html>`;
