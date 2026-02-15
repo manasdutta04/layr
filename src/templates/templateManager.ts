@@ -54,7 +54,8 @@ export class TemplateManager {
 
     public async saveTemplate(name: string, content: string, category: PlanTemplate['category']): Promise<void> {
         try {
-            const id = name.toLowerCase().replace(/\s+/g, '-');
+            // Sanitize: only allow alphanumeric, hyphens, and underscores
+            const id = name.toLowerCase().replace(/[^a-z0-9_-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
             const template: PlanTemplate = {
                 id,
                 name,

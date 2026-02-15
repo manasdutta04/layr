@@ -1,5 +1,6 @@
 
 import * as vscode from 'vscode';
+import { randomBytes } from 'crypto';
 import { VersionManager, PlanVersion } from './VersionManager';
 import { PlanDiffProvider } from './diffProvider';
 import { planner } from '../planner';
@@ -163,18 +164,21 @@ export class HistoryView {
                     <small>Model: ${escapedModel}</small>
                 </div>
                 <div class="version-actions">
-                     <button onclick="compareWithCurrent('${escapedId}')" title="Compare with active file">Diff with Active</button>
-                     <button onclick="restore('${escapedId}')" title="Restore content">Restore</button>
+                     <button class="action-btn" data-action="compareWithCurrent" data-id="${escapedId}" title="Compare with active file">Diff with Active</button>
+                     <button class="action-btn" data-action="restore" data-id="${escapedId}" title="Restore content">Restore</button>
                 </div>
             </div>
             `;
         }).join('');
+
+        const nonce = getNonce();
 
         return `<!DOCTYPE html>
         <html lang="en">
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';">
             <style>
                 body { font-family: var(--vscode-font-family); padding: 10px; color: var(--vscode-foreground); background-color: var(--vscode-editor-background); }
                 .version-item { border-bottom: 1px solid var(--vscode-panel-border); padding: 10px 0; }
@@ -201,18 +205,27 @@ export class HistoryView {
             <div id="versions">
                 ${rows.length ? rows : '<p>No history available.</p>'}
             </div>
-            <script>
+            <script nonce="${nonce}">
                 const vscode = acquireVsCodeApi();
-                function compareWithCurrent(id) {
-                    vscode.postMessage({ command: 'compareWithCurrent', versionId: id });
-                }
-                function restore(id) {
-                    vscode.postMessage({ command: 'restore', versionId: id });
-                }
+                document.addEventListener('click', function(e) {
+                    const btn = e.target.closest('.action-btn');
+                    if (!btn) return;
+                    const action = btn.dataset.action;
+                    const id = btn.dataset.id;
+                    if (action === 'compareWithCurrent') {
+                        vscode.postMessage({ command: 'compareWithCurrent', versionId: id });
+                    } else if (action === 'restore') {
+                        vscode.postMessage({ command: 'restore', versionId: id });
+                    }
+                });
             </script>
         </body>
         </html>`;
     }
+}
+
+function getNonce() {
+    return randomBytes(16).toString('hex');
 }
 
 function shortId(id: string) {

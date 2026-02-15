@@ -4,6 +4,14 @@
  */
 
 export default async function handler(req, res) {
+  // Verify request has a valid extension token
+  const extensionToken = req.headers['x-layr-token'];
+  const expectedToken = process.env.LAYR_EXTENSION_TOKEN;
+  
+  if (!expectedToken || extensionToken !== expectedToken) {
+    return res.status(401).json({ error: 'Unauthorized: Invalid or missing extension token' });
+  }
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     res.status(200).end();
@@ -21,6 +29,13 @@ export default async function handler(req, res) {
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt is required' });
     }
+
+    // Validate and sanitize maxTokens to prevent abuse
+    const sanitizedMaxTokens = Math.min(Math.max(parseInt(maxTokens) || 8000, 100), 8000);
+    
+    // Validate model name against allowed list
+    const allowedModels = ['llama-3.3-70b-versatile', 'llama-3.1-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768', 'gemma2-9b-it'];
+    const sanitizedModel = allowedModels.includes(model) ? model : 'llama-3.3-70b-versatile';
 
     // Get API key from environment variable (set in Vercel dashboard)
     const apiKey = process.env.GROQ_API_KEY;
@@ -58,9 +73,8 @@ export default async function handler(req, res) {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       console.error('Groq API error:', errorData);
-      return res.status(response.status).json({ 
-        error: 'AI service error', 
-        details: errorData 
+      return res.status(502).json({ 
+        error: 'AI service temporarily unavailable. Please try again.',
       });
     }
 
@@ -75,9 +89,8 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Proxy error:', error);
-    return res.status(500).json({ 
-      error: 'Internal server error',
-      message: error.message 
+    return res.status(500).json({
+      error: 'An internal error occurred. Please try again later.'
     });
   }
 }
