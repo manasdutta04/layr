@@ -529,7 +529,7 @@ export function activate(context: vscode.ExtensionContext) {
       }, async (_progress) => {
         try {
           const md = new MarkdownIt({
-            html: true,
+            html: false,
             linkify: true,
             typographer: true
           });

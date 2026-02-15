@@ -81,6 +81,16 @@ export class TemplateBrowser {
     }
 
     private getHtmlForWebview(templates: PlanTemplate[]): string {
+        // Helper function to escape HTML and prevent XSS
+        const escapeHtml = (unsafe: string): string => {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        };
+
         // Simple CSS for the cards
         const style = `
             body { font-family: var(--vscode-font-family); padding: 20px; color: var(--vscode-editor-foreground); }
@@ -119,10 +129,10 @@ export class TemplateBrowser {
         // Generate HTML cards
         const cardsHtml = templates.map(t => `
             <div class="card">
-                <span class="tag">${t.category}</span>
-                <h3>${t.name}</h3>
-                <p>${t.description}</p>
-                <button onclick="useTemplate('${t.id}')">Use Template</button>
+                <span class="tag">${escapeHtml(t.category)}</span>
+                <h3>${escapeHtml(t.name)}</h3>
+                <p>${escapeHtml(t.description)}</p>
+                <button onclick="useTemplate('${escapeHtml(t.id)}')">Use Template</button>
             </div>
         `).join('');
 
@@ -130,6 +140,7 @@ export class TemplateBrowser {
         <html lang="en">
         <head>
             <meta charset="UTF-8">
+            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline';">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>${style}</style>
         </head>

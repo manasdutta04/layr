@@ -5,6 +5,13 @@
 
 export default async function handler(req, res) {
   // Handle CORS preflight
+  const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(o => o.trim());
+  const origin = req.headers.origin || '';
+  
+  if (allowedOrigins.length > 0 && allowedOrigins[0] !== '' && !allowedOrigins.includes(origin)) {
+    return res.status(403).json({ error: 'Origin not allowed' });
+  }
+
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
@@ -15,8 +22,41 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Validate a shared secret or extension token
+  const clientToken = req.headers['x-layr-token'] || '';
+  const expectedToken = process.env.LAYR_CLIENT_TOKEN || '';
+  
+  if (expectedToken && clientToken !== expectedToken) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  // Basic rate limiting by IP (in production, use a proper rate limiter like upstash/ratelimit)
+  // This is a placeholder — Vercel's edge middleware or an external service should handle this
+  // For now, at minimum validate the token above
+
   try {
     const { prompt, model = 'llama-3.3-70b-versatile', maxTokens = 8000 } = req.body;
+
+    // Validate model against allowlist
+    const ALLOWED_MODELS = [
+      'llama-3.3-70b-versatile',
+      'llama-3.1-70b-versatile',
+      'llama-3.1-8b-instant',
+      'mixtral-8x7b-32768',
+      'gemma2-9b-it'
+    ];
+    if (!ALLOWED_MODELS.includes(model)) {
+      return res.status(400).json({ error: 'Invalid model specified' });
+    }
+
+    // Validate maxTokens bounds
+    const sanitizedMaxTokens = Math.min(Math.max(parseInt(maxTokens, 10) || 8000, 100), 8000);
+
+    // Validate prompt size (reject excessively large prompts)
+    const promptStr = typeof prompt === 'string' ? prompt : JSON.stringify(prompt);
+    if (promptStr.length > 50000) {
+      return res.status(400).json({ error: 'Prompt too large' });
+    }
 
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt is required' });
@@ -50,7 +90,7 @@ export default async function handler(req, res) {
             content: prompt.userPrompt || prompt
           }
         ],
-        max_tokens: maxTokens,
+        max_tokens: sanitizedMaxTokens,
         temperature: 0.7
       })
     });
@@ -59,8 +99,8 @@ export default async function handler(req, res) {
       const errorData = await response.json().catch(() => ({}));
       console.error('Groq API error:', errorData);
       return res.status(response.status).json({ 
-        error: 'AI service error', 
-        details: errorData 
+        error: 'AI service error. Please try again later.',
+        code: response.status
       });
     }
 
@@ -76,8 +116,7 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('Proxy error:', error);
     return res.status(500).json({ 
-      error: 'Internal server error',
-      message: error.message 
+      error: 'Internal server error. Please try again later.'
     });
   }
 }
