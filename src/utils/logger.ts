@@ -26,11 +26,20 @@ export class Logger {
 
   private log(level: LogLevel, message: string, ...args: unknown[]): void {
     const timestamp = new Date().toISOString();
+    
+    // Redact potential secrets from log output
+    const redactSecrets = (str: string): string => {
+      // Redact anything that looks like an API key (long alphanumeric strings)
+      return str.replace(/(?:gsk_|sk-|AIza)[A-Za-z0-9_-]{20,}/g, '[REDACTED]')
+                .replace(/GROQ_API_KEY=\S+/g, 'GROQ_API_KEY=[REDACTED]')
+                .replace(/Bearer\s+\S+/g, 'Bearer [REDACTED]');
+    };
+    
     const formattedArgs = args.length > 0 ? ` ${args.map(arg => 
       arg instanceof Error ? arg.stack || arg.message : JSON.stringify(arg)
     ).join(' ')}` : '';
     
-    const logLine = `[${timestamp}] [${level}] ${message}${formattedArgs}`;
+    const logLine = redactSecrets(`[${timestamp}] [${level}] ${message}${formattedArgs}`);
     
     // Add to output channel
     this.outputChannel.appendLine(logLine);
