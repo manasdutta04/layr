@@ -54,7 +54,11 @@ export class TemplateManager {
 
     public async saveTemplate(name: string, content: string, category: PlanTemplate['category']): Promise<void> {
         try {
-            const id = name.toLowerCase().replace(/\s+/g, '-');
+            // Sanitize the ID: only allow alphanumeric chars and hyphens, no path traversal
+            const id = name.toLowerCase()
+                .replace(/\s+/g, '-')
+                .replace(/[^a-z0-9-]/g, '')
+                .substring(0, 100);
             const template: PlanTemplate = {
                 id,
                 name,
@@ -63,7 +67,14 @@ export class TemplateManager {
                 content
             };
 
+            // Verify the resolved path is within the templates directory
             const filePath = path.join(this.localTemplatesPath, `${id}.json`);
+            const resolvedPath = path.resolve(filePath);
+            const resolvedBase = path.resolve(this.localTemplatesPath);
+            if (!resolvedPath.startsWith(resolvedBase)) {
+                throw new TemplateError('Invalid template name: potential path traversal detected');
+            }
+
             fs.writeFileSync(filePath, JSON.stringify(template, null, 2));
             logger.info(`TemplateManager: Saved template "${name}" to ${filePath}`);
             vscode.window.showInformationMessage(`Template "${name}" saved successfully!`);

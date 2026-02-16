@@ -36,14 +36,13 @@ export function activate(context: vscode.ExtensionContext) {
     try {
       // Load .env from extension directory
       const result = dotenv.config({ path: envPath });
-      logger.debug('Layr: dotenv.config() result:', result.error ? 'ERROR: ' + result.error : 'SUCCESS');
-      logger.debug('Layr: GROQ_API_KEY after dotenv:', process.env.GROQ_API_KEY ? '***configured***' : 'not found');
+      logger.debug('Layr: dotenv.config() result:', result.error ? 'ERROR' : 'SUCCESS');
+      logger.debug('Layr: API key status after dotenv:', process.env.GROQ_API_KEY ? 'configured' : 'not found');
 
       // Manual fallback - read file directly
       if (!process.env.GROQ_API_KEY) {
-        logger.warn('Layr: dotenv failed, trying manual file read');
+        logger.warn('Layr: dotenv failed, trying manual file read');        
         const envContent = fs.readFileSync(envPath, 'utf8');
-        logger.debug('Layr: .env file content length:', envContent.length);
 
         const lines = envContent.split('\n');
         for (const line of lines) {
@@ -51,7 +50,7 @@ export function activate(context: vscode.ExtensionContext) {
           if (trimmed.startsWith('GROQ_API_KEY=')) {
             const apiKey = trimmed.substring('GROQ_API_KEY='.length).trim();
             process.env.GROQ_API_KEY = apiKey;
-            logger.info('Layr: Manually set GROQ_API_KEY from file, length:', apiKey?.length);
+            logger.info('Layr: Manually set API key from file');
             break;
           }
         }
@@ -529,7 +528,7 @@ export function activate(context: vscode.ExtensionContext) {
       }, async (_progress) => {
         try {
           const md = new MarkdownIt({
-            html: true,
+            html: false,  // Disable raw HTML to prevent XSS in exported files
             linkify: true,
             typographer: true
           });

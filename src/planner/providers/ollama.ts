@@ -13,8 +13,19 @@ export class OllamaProvider implements AIProvider {
   private fetcher: typeof fetch;
 
   constructor(baseUrl: string, modelName: string, fetcher?: typeof fetch) {
-    // Remove trailing slash if present and ensure default if empty
-    this.baseUrl = (baseUrl || 'http://localhost:11434').replace(/\/$/, '');
+    // Validate and sanitize the base URL
+    const rawUrl = (baseUrl || 'http://localhost:11434').replace(/\/$/, '');
+    try {
+      const parsed = new URL(rawUrl);
+      // Only allow http and https schemes
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        throw new Error('Invalid protocol');
+      }
+      this.baseUrl = parsed.toString().replace(/\/$/, '');
+    } catch {
+      logger.warn(`OllamaProvider: Invalid base URL "${rawUrl}", falling back to default`);
+      this.baseUrl = 'http://localhost:11434';
+    }
     this.modelName = modelName || 'llama3';
     this.fetcher = fetcher || fetch;
     logger.info(`OllamaProvider: Initialized with ${this.baseUrl} using model ${this.modelName}`);
