@@ -1,10 +1,10 @@
-import { ProjectPlan, PlanGenerator, PlanTemplate, FileStructureItem, PlanStep } from './interfaces';
+import { ProjectPlan, PlanGenerator, RulePlanTemplate, FileStructureItem, PlanStep } from './interfaces';
 
 /**
  * Rule-based plan generator that works offline using predefined templates
  */
 export class RuleBasedPlanGenerator implements PlanGenerator {
-  private templates: PlanTemplate[] = [
+  private templates: RulePlanTemplate[] = [
     {
       keywords: ['web', 'website', 'frontend', 'react', 'vue', 'angular', 'html', 'css', 'javascript'],
       title: 'Web Application Project',

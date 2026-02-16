@@ -10,7 +10,6 @@ import { AIProviderError } from '../utils/errors';
  */
 export class Planner {
   private aiProvider: AIProvider | null = null;
-  private ruleGenerator: RuleBasedPlanGenerator;
   private config: LayrConfig;
   private aiModel!: string;
   private isProviderInjected: boolean = false;
@@ -20,8 +19,6 @@ export class Planner {
   }
 
   constructor(provider?: AIProvider) {
-    // ONLINE ONLY MODE: Disable rule-based generator
-    this.ruleGenerator = new RuleBasedPlanGenerator();
     this.config = this.loadConfig();
 
     if (provider) {
@@ -31,8 +28,6 @@ export class Planner {
     } else {
       this.initializeAIProvider();
     }
-
-    logger.info('Planner: ONLINE ONLY MODE - Offline templates disabled');
   }
 
   /**
@@ -292,11 +287,33 @@ Need help? Visit: https://github.com/manasdutta04/layr/issues`;
   }
 
   private loadConfig(): LayrConfig {
-    // Hardcoded to use Groq - no user configuration needed!
-    this.aiModel = 'llama-3.3-70b-versatile';
-    const aiProvider: AIProviderType = 'groq';
+    // Read user's preferred provider from settings, default to Groq
+    let aiProvider: AIProviderType = 'groq';
+    this.aiModel = 'llama-3.3-70b-versatile'; // default
 
-    // Only read from environment variable, not from VS Code settings
+    try {
+      const config = vscode.workspace.getConfiguration('layr');
+      const selectedProvider = config.get<string>('ai.provider', 'Groq');
+      
+      switch (selectedProvider) {
+        case 'Gemini':
+          aiProvider = 'gemini';
+          this.aiModel = 'gemini-2.5-flash';
+          break;
+        case 'Ollama':
+          aiProvider = 'ollama';
+          this.aiModel = config.get<string>('ai.modelName', 'llama3');
+          break;
+        case 'Groq':
+        default:
+          aiProvider = 'groq';
+          this.aiModel = 'llama-3.3-70b-versatile';
+          break;
+      }
+    } catch {
+      // VS Code API not available (test mode)
+    }
+
     const groqApiKey = process.env.GROQ_API_KEY || '';
     
     logger.debug('Layr Config Debug:', {
