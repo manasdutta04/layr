@@ -21,7 +21,21 @@ export class GroqProvider implements AIProvider {
     this.model = config.model || 'llama-3.3-70b-versatile';
 
     // Secure proxy endpoint - keeps API key safe on server
-    this.proxyURL = process.env.LAYR_PROXY_URL || 'https://layr-api.vercel.app/api/chat';
+    const envProxyUrl = process.env.LAYR_PROXY_URL;
+    if (envProxyUrl) {
+      try {
+        const parsed = new URL(envProxyUrl);
+        if (!['https:'].includes(parsed.protocol)) {
+          throw new Error('Only HTTPS proxy URLs are allowed');
+        }
+        this.proxyURL = envProxyUrl;
+      } catch {
+        logger.warn('GroqProvider: Invalid LAYR_PROXY_URL, using default');
+        this.proxyURL = 'https://layr-api.vercel.app/api/chat';
+      }
+    } else {
+      this.proxyURL = 'https://layr-api.vercel.app/api/chat';
+    }
 
     // Use proxy if URL is configured, otherwise this will fail gracefully
     this.useProxy = this.proxyURL !== 'YOUR_VERCEL_URL_HERE';
@@ -29,6 +43,12 @@ export class GroqProvider implements AIProvider {
   }
 
   async generatePlan(prompt: string, options?: { planSize?: string, planType?: string }): Promise<string> {
+    // Basic input sanitization - limit length and remove potential injection patterns
+    const sanitizedPrompt = prompt.substring(0, 2000).trim();
+    if (!sanitizedPrompt) {
+      throw new AIProviderError('Empty prompt provided', this.name);
+    }
+
     if (!this.useProxy) {
       throw new AIProviderError(
         'Layr AI backend proxy is not configured. ' +

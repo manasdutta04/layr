@@ -12,7 +12,7 @@
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",
-          "value": "*"
+          "value": "vscode-webview://*"
         },
         {
           "key": "Access-Control-Allow-Methods",
