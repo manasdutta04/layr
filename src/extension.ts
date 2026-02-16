@@ -14,6 +14,22 @@ import { HistoryView } from './version-control/HistoryView';
 import { logger } from './utils/logger';
 
 /**
+ * Sanitizes content before passing to external commands
+ * Removes potential command injection payloads
+ */
+function sanitizeForCommand(content: string): string {
+  // Remove markdown code blocks that might contain commands
+  const sanitized = content
+    .replace(/```[\s\S]*?```/g, '[code block removed for security]')
+    .replace(/`command:.*?`/gi, '[command removed]')
+    .replace(/vscode\.[a-zA-Z.]+/gi, '[vscode command removed]')
+    .replace(/<script[\s\S]*?<\/script>/gi, '');
+    
+  // Limit length to prevent DoS
+  return sanitized.substring(0, 50000);
+}
+
+/**
  * This method is called when the extension is activated
  */
 export function activate(context: vscode.ExtensionContext) {
@@ -30,14 +46,16 @@ export function activate(context: vscode.ExtensionContext) {
   const envPath = path.join(extensionRoot, '.env');
   logger.debug('Layr: Extension root:', extensionRoot);
   logger.debug('Layr: Attempting to load .env from:', envPath);
-  logger.debug('Layr: .env file exists:', fs.existsSync(envPath));
+  // SECURITY: Don't log file existence as it reveals extension structure
+  // logger.debug('Layr: .env file exists:', fs.existsSync(envPath));
 
   if (fs.existsSync(envPath)) {
     try {
       // Load .env from extension directory
       const result = dotenv.config({ path: envPath });
       logger.debug('Layr: dotenv.config() result:', result.error ? 'ERROR: ' + result.error : 'SUCCESS');
-      logger.debug('Layr: GROQ_API_KEY after dotenv:', process.env.GROQ_API_KEY ? '***configured***' : 'not found');
+      // SECURITY: Never log key status as it leaks information
+      // logger.debug('Layr: GROQ_API_KEY after dotenv:', process.env.GROQ_API_KEY ? '***configured***' : 'not found');
 
       // Manual fallback - read file directly
       if (!process.env.GROQ_API_KEY) {
@@ -50,7 +68,12 @@ export function activate(context: vscode.ExtensionContext) {
           const trimmed = line.trim();
           if (trimmed.startsWith('GROQ_API_KEY=')) {
             const apiKey = trimmed.substring('GROQ_API_KEY='.length).trim();
-            process.env.GROQ_API_KEY = apiKey;
+            // SECURITY: Validate key format before setting
+            if (apiKey && apiKey.startsWith('gsk_') && !apiKey.includes('your_') && !apiKey.includes('example')) {
+              process.env.GROQ_API_KEY = apiKey;
+            } else {
+              logger.warn('Layr: Invalid or placeholder API key detected in .env file');
+            }
             logger.info('Layr: Manually set GROQ_API_KEY from file, length:', apiKey?.length);
             break;
           }
@@ -352,7 +375,10 @@ export function activate(context: vscode.ExtensionContext) {
         if (copilotChat) {
           try {
             await vscode.commands.executeCommand('workbench.action.chat.open', {
-              query: `I have a project plan that I need help implementing. Here's the complete plan:\n\n${content}\n\nPlease help me implement this step by step. Let's start with Phase 1.`
+            // SECURITY: Sanitize content before sending to chat
+            const sanitizedContent = sanitizeForCommand(content);
+            
+              query: `I have a project plan that I need help implementing. Here's the complete plan:\n\n${sanitizedContent}\n\nPlease help me implement this step by step. Let's start with Phase 1.`
             });
             chatOpened = true;
 

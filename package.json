@@ -194,8 +194,12 @@
     "test": "npm run compile && node ./out/test/runTest.js",
     "lint": "eslint src --ext ts",
     "test:unit": "vitest run",
+    "test:security": "vitest run tests/security",
     "test:coverage": "vitest run --coverage",
-    "test:ci": "npm run lint && npm run compile && vitest run --coverage"
+    "test:ci": "npm run lint && npm run compile && vitest run --coverage",
+    "security:audit": "npm audit --audit-level=moderate",
+    "security:check": "npm outdated && npm audit",
+    "security:fix": "npm audit fix"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
@@ -218,10 +222,17 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.2.1",
-    "@types/node-fetch": "^2.6.13",
-    "dotenv": "^17.2.3",
-    "markdown-it": "^14.1.0",
-    "node-fetch": "^3.3.2"
+    "@google/generative-ai": "0.2.1",
+    "@types/node-fetch": "2.6.13",
+    "dotenv": "17.2.3",
+    "markdown-it": "14.1.0",
+    "node-fetch": "3.3.2"
+  },
+  "overrides": {
+    "markdown-it": "14.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   }
 }

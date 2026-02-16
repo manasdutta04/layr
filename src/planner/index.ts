@@ -396,7 +396,12 @@ Need help? Visit: https://github.com/manasdutta04/layr/issues`;
       // Try to parse JSON with error handling and repair
       let planData;
       try {
-        planData = JSON.parse(jsonText);
+        // SECURITY: Use safe JSON parser to prevent prototype pollution
+        planData = safeJsonParse<any>(jsonText);
+        if (!planData) {
+          throw new Error('JSON parsing returned null');
+        }
+        
         logger.debug('Planner.parseAIPlan: Successfully parsed JSON');
       } catch (parseError) {
         logger.warn('Planner.parseAIPlan: JSON parse error:', parseError);

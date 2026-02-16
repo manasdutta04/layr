@@ -2,6 +2,18 @@ import { detectServices } from './serviceDetector';
 import { PRICING_DATABASE, ALTERNATIVES } from './pricingData';
 import { logger } from '../utils/logger';
 
+/**
+ * Escapes HTML special characters to prevent injection
+ */
+function escapeMarkdown(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\[/g, "\\[")
+    .replace(/\]/g, "\\]");
+}
+
 export function estimateCost(planText: string): string {
     logger.info('CostEstimator: Estimating costs for plan...');
     const services = detectServices(planText);
@@ -21,7 +33,7 @@ export function estimateCost(planText: string): string {
         const item = PRICING_DATABASE[id];
         if (item) {
             totalCost += item.costPerMonth;
-            breakdownRows += `| ${item.serviceName} | ${item.provider} | $${item.costPerMonth} | ${item.unit} |\n`;
+            breakdownRows += `| ${escapeMarkdown(item.serviceName)} | ${escapeMarkdown(item.provider)} | $${item.costPerMonth} | ${escapeMarkdown(item.unit)} |\n`;
 
             // Check for cheaper alternatives
             if (ALTERNATIVES[id]) {

@@ -4,6 +4,43 @@ import { logger } from '../../utils/logger';
 import { AIProviderError } from '../../utils/errors';
 
 /**
+ * SECURITY: Sanitizes user prompts to prevent injection attacks
+ * @param prompt - Raw user input
+ * @returns Sanitized prompt safe for AI processing
+ */
+function sanitizePrompt(prompt: string): string {
+  // Limit length to prevent DoS
+  if (prompt.length > 10000) {
+    throw new AIProviderError('Prompt exceeds maximum length of 10,000 characters', 'Groq');
+  }
+  
+  // Remove common injection patterns
+  let sanitized = prompt
+    // Remove system override attempts
+    .replace(/SYSTEM\s*(OVERRIDE|INSTRUCTION|PROMPT)/gi, '')
+    .replace(/IGNORE\s*(ALL\s*)?(PREVIOUS|ABOVE)\s*INSTRUCTIONS?/gi, '')
+    .replace(/NEW\s*INSTRUCTIONS?/gi, '')
+    .replace(/DISREGARD\s*(PREVIOUS|ALL)/gi, '')
+    // Remove prompt injection markers
+    .replace(/\[SYSTEM.*?\]/gi, '')
+    .replace(/\{SYSTEM.*?\}/gi, '')
+    // Remove attempts to break out of context
+    .replace(/"""/g, '"')
+    .replace(/\n\n\n+/g, '\n\n')
+    // Remove script tags
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    // Limit special characters
+    .replace(/[^\w\s.,!?;:()\-'"\/\n]/g, '');
+  
+  // Warn if significant changes were made
+  if (sanitized.length < prompt.length * 0.9) {
+    logger.warn('GroqProvider: Significant prompt sanitization applied');
+  }
+  
+  return sanitized.trim();
+}
+
+/**
  * Groq AI Provider (via Secure Proxy)
  * Uses a secure backend proxy to keep API keys safe
  * Zero configuration needed for users!
@@ -14,17 +51,41 @@ export class GroqProvider implements AIProvider {
   private model: string;
   private proxyURL: string;
   private useProxy: boolean;
+  private authToken: string;
 
   private fetcher: typeof fetch;
 
   constructor(config: { apiKey?: string; model?: string; baseURL?: string }, fetcher?: typeof fetch) {
     this.model = config.model || 'llama-3.3-70b-versatile';
 
-    // Secure proxy endpoint - keeps API key safe on server
-    this.proxyURL = process.env.LAYR_PROXY_URL || 'https://layr-api.vercel.app/api/chat';
+    // SECURITY: Never use hardcoded URLs in production
+    // Require explicit configuration of proxy URL
+    this.proxyURL = process.env.LAYR_PROXY_URL;
+    
+    if (!this.proxyURL) {
+      throw new AIProviderError(
+        'LAYR_PROXY_URL environment variable is required. ' +
+        'Deploy your own secure proxy following the guide at: ' +
+        'https://github.com/manasdutta04/layr/blob/main/api-proxy/README.md',
+        this.name
+      );
+    }
+    
+    // Validate URL format to prevent injection
+    if (!this.proxyURL.startsWith('https://')) {
+      throw new AIProviderError('LAYR_PROXY_URL must use HTTPS protocol', this.name);
+    }
 
     // Use proxy if URL is configured, otherwise this will fail gracefully
     this.useProxy = this.proxyURL !== 'YOUR_VERCEL_URL_HERE';
+    
+    // SECURITY: Get auth token for proxy
+    this.authToken = process.env.LAYR_PROXY_TOKEN || '';
+    if (this.useProxy && !this.authToken) {
+      logger.error('GroqProvider: LAYR_PROXY_TOKEN not configured');
+      this.useProxy = false;
+    }
+    
     this.fetcher = fetcher || fetch;
   }
 
@@ -39,6 +100,10 @@ export class GroqProvider implements AIProvider {
     }
 
     try {
+      // SECURITY: Sanitize user input before processing
+      const sanitizedPrompt = sanitizePrompt(prompt);
+      logger.debug(`GroqProvider: Prompt sanitized (original: ${prompt.length}, sanitized: ${sanitizedPrompt.length})`);
+      
       logger.info(`GroqProvider: Generating plan for project type: ${options?.planType || 'SaaS'} (Size: ${options?.planSize || 'Normal'})`);
       // Extract settings from options
       const planSize = options?.planSize || 'Normal';
@@ -629,11 +694,12 @@ CRITICAL REMINDER: Your response MUST be ${planSize === 'Concise' ? 'EXACTLY 80-
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.authToken}`,
         },
         body: JSON.stringify({
           prompt: {
             systemPrompt: systemPrompt,
-            userPrompt: prompt
+            userPrompt: sanitizedPrompt  // Use sanitized version
           },
           model: this.model,
           maxTokens: maxTokens,
@@ -642,9 +708,11 @@ CRITICAL REMINDER: Your response MUST be ${planSize === 'Concise' ? 'EXACTLY 80-
 
       if (!response.ok) {
         const errorText = await response.text();
-        logger.error('GroqProvider: Proxy API Error:', errorText);
+        // SECURITY: Don't log full error responses as they may contain sensitive info
+        logger.error('GroqProvider: API request failed with status:', response.status);
         
-        let userMsg = `API request failed (${response.status}): ${errorText}`;
+        // Generic user-facing error message
+        let userMsg: string;
 
         // Provide generic guidance for common HTTP errors
         if (response.status === 401 || response.status === 403) {
@@ -656,7 +724,10 @@ CRITICAL REMINDER: Your response MUST be ${planSize === 'Concise' ? 'EXACTLY 80-
         } else if (response.status === 408 || response.status === 504) {
           userMsg = `Request timeout (${response.status}). Try again with a simpler project description.`;
         } else if (response.status >= 400 && response.status < 500) {
-          userMsg = `Request error (${response.status}): ${errorText}. Check your configuration at: https://github.com/manasdutta04/layr#setup`;
+          // SECURITY: Don't include error details in user message
+          userMsg = `Request error (${response.status}). Check your configuration at: https://github.com/manasdutta04/layr#setup`;
+        } else {
+          userMsg = 'An unexpected error occurred. Please try again or check the logs.';
         }
         
         throw new AIProviderError(userMsg, this.name);
@@ -699,6 +770,9 @@ CRITICAL REMINDER: Your response MUST be ${planSize === 'Concise' ? 'EXACTLY 80-
     }
 
     try {
+      // SECURITY: Sanitize refinement prompt
+      const sanitizedRefinement = sanitizePrompt(refinementPrompt);
+      
       logger.info('GroqProvider: Refining section...');
       const systemPrompt = `You are an expert software architect. Refine the following section of a project plan based on the user's request.
       

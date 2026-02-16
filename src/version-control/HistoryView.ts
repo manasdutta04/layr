@@ -137,7 +137,15 @@ export class HistoryView {
     private _getHtmlForWebview(versions: PlanVersion[]) {
         // Helper function to escape HTML and prevent XSS
         const escapeHtml = (unsafe: string): string => {
-            return unsafe
+      // SECURITY FIX: Handle null/undefined and ensure string type
+      if (unsafe === null || unsafe === undefined) {
+        return '';
+      }
+      
+      // Ensure we're working with a string
+      const safeStr = String(unsafe);
+      
+      return safeStr
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
                 .replace(/>/g, "&gt;")

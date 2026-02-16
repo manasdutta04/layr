@@ -7,6 +7,24 @@ import { ProjectPlan } from '../planner/interfaces';
 import { logger } from '../utils/logger';
 
 export interface PlanVersion {
+/**
+ * SECURITY: Validates UUID format to prevent injection
+ */
+function isValidUUID(uuid: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(uuid);
+}
+
+/**
+ * SECURITY: Sanitizes a path to prevent traversal
+ */
+function sanitizePath(basePath: string, filename: string): string | null {
+  const fullPath = path.join(basePath, filename);
+  const normalized = path.normalize(fullPath);
+  return normalized.startsWith(path.normalize(basePath)) ? normalized : null;
+}
+
+export interface PlanVersion {
     id: string; // UUID-based unique id
     timestamp: number;
     plan: ProjectPlan;
@@ -47,7 +65,11 @@ export class VersionManager {
 
     private async ensureHistoryDir() {
         if (this.historyDir && !fs.existsSync(this.historyDir)) {
-            await fs.promises.mkdir(this.historyDir, { recursive: true });
+            // SECURITY: Create with owner-only permissions
+            await fs.promises.mkdir(this.historyDir, { 
+                recursive: true,
+                mode: 0o700  // rwx------
+            });
         }
     }
 
@@ -85,10 +107,34 @@ export class VersionManager {
             metadata
         };
 
-        const versionFile = path.join(this.historyDir, `${id}.json`);
+    // SECURITY: Validate UUID format to prevent path traversal
+    if (!id || !isValidUUID(id)) {
+      logger.warn(`VersionManager: Invalid version ID format: ${id}`);
+      return null;
+    }
+    
+    // SECURITY: Use sanitized path
+    const versionFile = sanitizePath(this.historyDir, `${id}.json`);
+    if (!versionFile) {
+      logger.error(`VersionManager: Path traversal attempt detected for ID: ${id}`);
+      return null;
+    }
+    
 
         try {
-            await fs.promises.writeFile(versionFile, JSON.stringify(version, null, 2));
+            // SECURITY: Write with restrictive permissions
+            const fileContent = JSON.stringify(version, null, 2);
+            await fs.promises.writeFile(versionFile, fileContent, {
+                mode: 0o600  // rw-------
+            });
+            
+            // Verify permissions
+            const stats = await fs.promises.stat(versionFile);
+            const actualMode = stats.mode & 0o777;
+            if (actualMode !== 0o600) {
+                logger.warn(`VersionManager: File permissions not as expected for ${id}. Got ${actualMode.toString(8)}`);
+            }
+            
             logger.debug(`VersionManager: Saved plan version ${id} to ${versionFile}`);
 
             // Automatically cleanup old versions to prevent unlimited growth
