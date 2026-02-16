@@ -335,10 +335,30 @@ All provide detailed, customized plans but require your own API keys.
 
 ## Privacy and Security
 
-- API keys are stored locally in VS Code settings
-- No data is collected or transmitted except to Google's Gemini API
-- Generated plans remain on your local machine
-- All communication with external services uses secure HTTPS connections
+### Data Privacy
+
+- ✅ **Local Storage** - Plans, templates, and history stored locally in your workspace
+- ✅ **No Tracking** - We don't collect any telemetry or usage data
+- ✅ **Secure Transmission** - All API communication uses HTTPS
+- ✅ **API Key Protection** - Keys stored securely in VS Code settings
+
+### Security Features
+
+- ✅ Input validation and sanitization
+- ✅ Path traversal prevention
+- ✅ XSS protection in WebViews
+- ✅ Rate limiting on AI operations
+- ✅ CSRF protection
+- ✅ Content Security Policy
+
+### Security Best Practices
+
+1. Always review AI-generated plans before execution
+2. Keep the extension updated to the latest version
+3. Don't commit `.env` files with API keys
+4. Use trusted workspaces in VS Code
+
+For security concerns, see [SECURITY.md](SECURITY.md)
 
 ## Contributing
 
@@ -373,6 +393,22 @@ npm run watch
 
 # Debug in VS Code
 # Press F5 to launch Extension Development Host
+```
+
+### Security Best Practices for Development
+
+```bash
+# Always use package-lock.json for reproducible builds
+npm ci  # instead of npm install
+
+# Audit dependencies regularly
+npm audit
+
+# Check for outdated packages
+npm outdated
+
+# Update dependencies securely
+npm update --save
 ```
 
 ### Building

@@ -3,6 +3,20 @@ import { TemplateManager } from './templateManager';
 import { logger } from '../utils/logger';
 import { PlanTemplate } from './builtinTemplates';
 
+/**
+ * Sanitizes HTML to prevent XSS attacks
+ * @param unsafe - Potentially unsafe string
+ * @returns Escaped HTML-safe string
+ */
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 export class TemplateBrowser {
     private panel: vscode.WebviewPanel | undefined;
 
@@ -119,10 +133,10 @@ export class TemplateBrowser {
         // Generate HTML cards
         const cardsHtml = templates.map(t => `
             <div class="card">
-                <span class="tag">${t.category}</span>
-                <h3>${t.name}</h3>
-                <p>${t.description}</p>
-                <button onclick="useTemplate('${t.id}')">Use Template</button>
+                <span class="tag">${escapeHtml(t.category)}</span>
+                <h3>${escapeHtml(t.name)}</h3>
+                <p>${escapeHtml(t.description)}</p>
+                <button onclick="useTemplate('${escapeHtml(t.id)}')">Use Template</button>
             </div>
         `).join('');
 

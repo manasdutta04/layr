@@ -17,8 +17,16 @@ export class TemplateManager {
     private ensureStorageExists() {
         try {
             if (!fs.existsSync(this.localTemplatesPath)) {
-                fs.mkdirSync(this.localTemplatesPath, { recursive: true });
+                // SECURITY: Create directory with restrictive permissions (owner only)
+                fs.mkdirSync(this.localTemplatesPath, { 
+                    recursive: true,
+                    mode: 0o700  // rwx------ (700)
+                });
                 logger.info(`TemplateManager: Created local templates directory at ${this.localTemplatesPath}`);
+                
+                // Verify permissions were set correctly
+                const stats = fs.statSync(this.localTemplatesPath);
+                logger.debug(`TemplateManager: Directory permissions: ${(stats.mode & 0o777).toString(8)}`);
             }
         } catch (error) {
             logger.error('TemplateManager: Failed to create templates directory:', error);
@@ -42,7 +50,14 @@ export class TemplateManager {
             for (const file of files) {
                 if (file.endsWith('.json')) {
                     const content = fs.readFileSync(path.join(this.localTemplatesPath, file), 'utf-8');
-                    templates.push(JSON.parse(content));
+          
+          // SECURITY: Use safe JSON parser
+          const template = safeJsonParse<PlanTemplate>(content);
+          if (template) {
+            templates.push(template);
+          } else {
+            logger.warn(`TemplateManager: Failed to parse template file: ${file}`);
+          }
                 }
             }
             logger.debug(`TemplateManager: Loaded ${templates.length} user templates`);
@@ -64,7 +79,20 @@ export class TemplateManager {
             };
 
             const filePath = path.join(this.localTemplatesPath, `${id}.json`);
-            fs.writeFileSync(filePath, JSON.stringify(template, null, 2));
+      
+      // SECURITY: Write file with restrictive permissions (owner read-write only)
+      const fileContent = JSON.stringify(template, null, 2);
+      fs.writeFileSync(filePath, fileContent, {
+        mode: 0o600  // rw------- (600)
+      });
+      
+      // Double-check permissions were applied
+      const stats = fs.statSync(filePath);
+      const actualMode = stats.mode & 0o777;
+      if (actualMode !== 0o600) {
+        logger.warn(`TemplateManager: File permissions not as expected. Got ${actualMode.toString(8)}, wanted 600`);
+      }
+      
             logger.info(`TemplateManager: Saved template "${name}" to ${filePath}`);
             vscode.window.showInformationMessage(`Template "${name}" saved successfully!`);
         } catch (error) {
