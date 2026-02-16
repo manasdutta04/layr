@@ -103,7 +103,7 @@ export interface AIProviderFactory {
 /**
  * Template for rule-based plan generation
  */
-export interface PlanTemplate {
+export interface RulePlanTemplate {
   keywords: string[];
   title: string;
   overview: string;

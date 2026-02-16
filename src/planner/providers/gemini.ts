@@ -7,6 +7,25 @@ import { AIProviderError } from '../../utils/errors';
  * Gemini AI provider implementation
  */
 export class GeminiProvider implements AIProvider {
+  private static readonly SAFETY_SETTINGS = [
+    {
+      category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+      threshold: HarmBlockThreshold.BLOCK_NONE,
+    },
+    {
+      category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+      threshold: HarmBlockThreshold.BLOCK_NONE,
+    },
+    {
+      category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+      threshold: HarmBlockThreshold.BLOCK_NONE,
+    },
+    {
+      category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+      threshold: HarmBlockThreshold.BLOCK_NONE,
+    },
+  ];
+
   public readonly name = 'Google Gemini';
   public readonly type: AIProviderType = 'gemini';
 
@@ -41,24 +60,7 @@ export class GeminiProvider implements AIProvider {
           topP: 0.95,
           maxOutputTokens: 8192,
         },
-        safetySettings: [
-          {
-            category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-            threshold: HarmBlockThreshold.BLOCK_NONE,
-          },
-          {
-            category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-            threshold: HarmBlockThreshold.BLOCK_NONE,
-          },
-          {
-            category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-            threshold: HarmBlockThreshold.BLOCK_NONE,
-          },
-          {
-            category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-            threshold: HarmBlockThreshold.BLOCK_NONE,
-          },
-        ],
+        safetySettings: GeminiProvider.SAFETY_SETTINGS,
       });
 
       const systemPrompt = `Create a comprehensive and detailed project plan in JSON format for: "${prompt}"

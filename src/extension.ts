@@ -246,24 +246,14 @@ export function activate(context: vscode.ExtensionContext) {
         } catch (error) {
           logger.error('Plan generation error:', error);
           const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-          const action = 'Show Logs';
-          vscode.window.showErrorMessage(`Failed to generate plan: ${errorMessage}`, action).then(selected => {
-            if (selected === action) {
-              logger.show();
-            }
-          });
+          logger.showError(`Failed to generate plan: ${errorMessage}`);
         }
       });
 
     } catch (error) {
       logger.error('Create plan command error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      const action = 'Show Logs';
-      vscode.window.showErrorMessage(`Error creating plan: ${errorMessage}`, action).then(selected => {
-        if (selected === action) {
-          logger.show();
-        }
-      });
+      logger.showError(`Error creating plan: ${errorMessage}`);
     }
   });
 

@@ -1,8 +1,10 @@
+type ConfigValue = string | number | boolean | undefined;
+
 export const workspace = {
   getConfiguration: (_section?: string) => ({
-    get: <T>(_key: string, defaultValue: T) => defaultValue
+    get: <T extends ConfigValue>(_key: string, defaultValue: T): T => defaultValue
   }),
-  openTextDocument: async (options: any) => {
+  openTextDocument: async (options: { content?: string; language?: string }) => {
     (window as any)._openTextDocumentCalls.push(options);
     return { uri: { fsPath: '' }, document: options };
   }
