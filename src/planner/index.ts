@@ -6,6 +6,59 @@ import { logger } from '../utils/logger';
 import { AIProviderError } from '../utils/errors';
 
 /**
+ * Input validation and sanitization utilities for prompt injection prevention
+ */
+class PromptValidator {
+  private static readonly MAX_PROMPT_LENGTH = 2000;
+  private static readonly SUSPICIOUS_PATTERNS = [
+    /ignore\s+(all\s+)?previous\s+instructions?/gi,
+    /disregard\s+(all\s+)?(previous|prior)\s+instructions?/gi,
+    /new\s+system\s+prompt/gi,
+    /---\s*system\s*---/gi,
+    /\[\[\[.*system.*\]\]\]/gi,
+    /<script[^>]*>.*<\/script>/gi,
+    /javascript:/gi,
+    /on\w+\s*=/gi, // Event handlers like onclick=
+    /eval\s*\(/gi,
+    /api[_-]?key/gi,
+    /secret/gi,
+    /password/gi,
+    /\{\{.*\}\}/g, // Template injection patterns
+  ];
+
+  /**
+   * Validates and sanitizes user prompt input
+   * @throws Error if prompt fails validation
+   */
+  static validatePrompt(prompt: string): string {
+    if (!prompt || typeof prompt !== 'string') {
+      throw new Error('Prompt must be a non-empty string');
+    }
+
+    const trimmed = prompt.trim();
+
+    if (trimmed.length === 0) {
+      throw new Error('Prompt cannot be empty');
+    }
+
+    if (trimmed.length > this.MAX_PROMPT_LENGTH) {
+      throw new Error(`Prompt exceeds maximum length of ${this.MAX_PROMPT_LENGTH} characters`);
+    }
+
+    // Check for suspicious patterns
+    for (const pattern of this.SUSPICIOUS_PATTERNS) {
+      if (pattern.test(trimmed)) {
+        logger.warn('Prompt validation: Suspicious pattern detected', { pattern: pattern.source });
+        throw new Error('Prompt contains potentially unsafe content. Please rephrase your request.');
+      }
+    }
+
+    // Return sanitized prompt (basic escape)
+    return trimmed.replace(/[<>]/g, ''); // Remove angle brackets to prevent HTML injection
+  }
+}
+
+/**
  * Main planner class that orchestrates plan generation
  */
 export class Planner {
@@ -39,6 +92,16 @@ export class Planner {
    * Generate a project plan from a natural language prompt - ONLINE ONLY MODE
    */
   async generatePlan(prompt: string): Promise<ProjectPlan> {
+    // SECURITY: Validate and sanitize prompt before processing
+    let sanitizedPrompt: string;
+    try {
+      sanitizedPrompt = PromptValidator.validatePrompt(prompt);
+      logger.info('Planner.generatePlan: Prompt validation successful');
+    } catch (error) {
+      logger.error('Planner.generatePlan: Prompt validation failed', error);
+      throw new AIProviderError(error instanceof Error ? error.message : 'Invalid prompt', 'Validation');
+    }
+
     logger.info('Planner.generatePlan: ONLINE ONLY MODE - Starting plan generation');
 
     // Force refresh config to ensure we have the latest API key (skip if provider was injected for testing)
@@ -115,7 +178,7 @@ If the issue persists:
 
     try {
       logger.info('Planner.generatePlan: Attempting AI plan generation with', this.aiProvider.name);
-      const planMarkdown = await this.aiProvider.generatePlan(prompt, { planSize, planType });
+      const planMarkdown = await this.aiProvider.generatePlan(sanitizedPrompt, { planSize, planType });
       logger.info('Planner.generatePlan: AI plan generation successful');
       logger.debug('Planner.generatePlan: Raw response length:', planMarkdown.length);
       logger.debug('Planner.generatePlan: Raw response preview:', planMarkdown.substring(0, 200));
@@ -292,9 +355,18 @@ Need help? Visit: https://github.com/manasdutta04/layr/issues`;
   }
 
   private loadConfig(): LayrConfig {
-    // Hardcoded to use Groq - no user configuration needed!
+    // Default to Groq for zero-config experience
     this.aiModel = 'llama-3.3-70b-versatile';
     const aiProvider: AIProviderType = 'groq';
+
+    // SECURITY NOTE: Reading from settings is deprecated
+    // API keys should be stored in VS Code secret storage instead
+    // This code path is maintained for backward compatibility only
+    const config = vscode.workspace.getConfiguration('layr');
+    const settingsApiKey = config.get<string>('geminiApiKey');
+    if (settingsApiKey && settingsApiKey !== 'your_api_key_here') {
+      logger.warn('Layr: API key in settings detected. This is insecure. Use "Layr: Configure API Key" command instead.');
+    }
 
     // Only read from environment variable, not from VS Code settings
     const groqApiKey = process.env.GROQ_API_KEY || '';

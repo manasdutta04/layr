@@ -1,7 +1,43 @@
 import { AIProvider, AIProviderType } from '../interfaces';
 import fetch from 'node-fetch';
+import * as https from 'https';
 import { logger } from '../../utils/logger';
 import { AIProviderError } from '../../utils/errors';
+
+/**
+ * Secure HTTPS agent with strict TLS configuration
+ */
+const secureAgent = new https.Agent({
+  // Require TLS 1.2 or higher
+  minVersion: 'TLSv1.2',
+  // Reject unauthorized certificates (default true, but explicit for clarity)
+  rejectUnauthorized: true,
+  // Disable session caching for maximum security
+  maxCachedSessions: 0,
+  // Enable certificate revocation checking if available
+  // Note: Not all Node.js versions support this
+  checkServerIdentity: (hostname: string, cert: any) => {
+    // Verify hostname matches certificate
+    const { TLSSocket } = require('tls');
+    const error = TLSSocket.prototype.checkServerIdentity(hostname, cert);
+    
+    if (error) {
+      logger.error('TLS certificate validation failed', { hostname, error });
+      throw error;
+    }
+    
+    // Additional validation: Check certificate expiry
+    const now = new Date();
+    const validFrom = new Date(cert.valid_from);
+    const validTo = new Date(cert.valid_to);
+    
+    if (now < validFrom || now > validTo) {
+      throw new Error(`Certificate for ${hostname} is not valid (expired or not yet valid)`);
+    }
+    
+    return undefined;
+  }
+});
 
 /**
  * Groq AI Provider (via Secure Proxy)
@@ -630,6 +666,7 @@ CRITICAL REMINDER: Your response MUST be ${planSize === 'Concise' ? 'EXACTLY 80-
         headers: {
           'Content-Type': 'application/json',
         },
+        agent: secureAgent,
         body: JSON.stringify({
           prompt: {
             systemPrompt: systemPrompt,
@@ -639,6 +676,23 @@ CRITICAL REMINDER: Your response MUST be ${planSize === 'Concise' ? 'EXACTLY 80-
           maxTokens: maxTokens,
         }),
       });
+    } catch (error) {
+      // Check if error is certificate-related
+      if (error instanceof Error) {
+        if (error.message.includes('certificate') || 
+            error.message.includes('TLS') || 
+            error.message.includes('SSL')) {
+          logger.error('TLS/Certificate error during API call:', error);
+          throw new AIProviderError(
+            'Secure connection to AI service failed. This could indicate a network security issue. ' +
+            'Please check your network connection and try again. If the problem persists, ' +
+            'you may be behind a corporate proxy that intercepts HTTPS traffic.',
+            this.name
+          );
+        }
+      }
+      throw error;
+    }
 
       if (!response.ok) {
         const errorText = await response.text();

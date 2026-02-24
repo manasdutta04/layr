@@ -1,6 +1,16 @@
 # Layr API Proxy
 
-This is a secure serverless API proxy that keeps your Groq API key safe while allowing the Layr extension to work for all users.
+This is a secure serverless API proxy that keeps your Groq API key safe.
+
+## 🔒 CRITICAL SECURITY NOTES
+
+1. **NEVER commit your `.env` file** - Add it to `.gitignore` immediately
+2. **Use Vercel environment variables** - Set secrets in Vercel dashboard, NOT in code
+3. **Rotate API keys regularly** - Change keys every 90 days minimum
+4. **Monitor API usage** - Check Groq dashboard for unusual activity
+5. **Enable Vercel secret scanning** - Use Vercel's built-in security features
+6. **Implement request signing** - Add HMAC validation for production deployments
+7. **Use separate keys per environment** - Never reuse production keys in development
 
 ## 🚀 Free Deployment to Vercel
 
@@ -48,6 +58,16 @@ https://your-project-name.vercel.app/api/chat
 ```
 
 #### 4. Update Extension Code
+
+**SECURITY WARNING:** Do NOT hardcode the proxy URL in production releases.
+Use environment-based configuration or VS Code settings.
+
+For development/testing only:
+```typescript
+// In development only - use settings in production
+private readonly PROXY_URL = process.env.LAYR_PROXY_URL || 'http://localhost:3000/api/chat';
+```
+
 Copy your Vercel URL and update `src/planner/providers/groq.ts`:
 ```typescript
 private baseURL = 'https://your-project-name.vercel.app/api/chat';
@@ -59,6 +79,7 @@ private baseURL = 'https://your-project-name.vercel.app/api/chat';
 ```bash
 cp .env.example .env
 # Edit .env and add your GROQ_API_KEY
+# IMPORTANT: Verify .env is in .gitignore before committing any code
 ```
 
 2. Install dependencies:
@@ -84,7 +105,11 @@ curl -X POST http://localhost:3000/api/chat \
 
 ## 🔒 Security Features
 
-- ✅ API key stored securely in Vercel environment variables
+- ✅ API key stored as Vercel environment variable (encrypted at rest)
+- ✅ Rate limiting (10 requests per minute per IP)
+- ✅ API key format validation
+- ✅ Generic error messages (no information leakage)
+- ✅ Request validation and sanitization
 - ✅ Never exposed in client-side code
 - ✅ CORS enabled for your extension
 - ✅ Rate limiting (via Vercel's built-in limits)

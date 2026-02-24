@@ -1,7 +1,30 @@
 import fetch from 'node-fetch';
+import * as https from 'https';
 import { AIProvider, AIProviderType } from '../interfaces';
 import { logger } from '../../utils/logger';
 import { AIProviderError } from '../../utils/errors';
+
+/**
+ * Secure HTTPS agent for Ollama connections
+ * Note: Ollama often runs on localhost, so certificate validation
+ * might be relaxed for local connections
+ */
+function getOllamaAgent(baseUrl: string): https.Agent | undefined {
+  // If connecting to localhost, don't enforce strict certificate validation
+  // (self-signed certs are common for local Ollama instances)
+  if (baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')) {
+    logger.debug('Ollama: Using relaxed TLS validation for localhost');
+    return new https.Agent({
+      rejectUnauthorized: false
+    });
+  }
+  
+  // For remote Ollama instances, enforce strict validation
+  return new https.Agent({
+    minVersion: 'TLSv1.2',
+    rejectUnauthorized: true
+  });
+}
 
 export class OllamaProvider implements AIProvider {
   public readonly name = 'Ollama';
@@ -9,6 +32,7 @@ export class OllamaProvider implements AIProvider {
 
   private baseUrl: string;
   private modelName: string;
+  private httpsAgent: https.Agent | undefined;
 
   private fetcher: typeof fetch;
 
@@ -17,6 +41,7 @@ export class OllamaProvider implements AIProvider {
     this.baseUrl = (baseUrl || 'http://localhost:11434').replace(/\/$/, '');
     this.modelName = modelName || 'llama3';
     this.fetcher = fetcher || fetch;
+    this.httpsAgent = getOllamaAgent(this.baseUrl);
     logger.info(`OllamaProvider: Initialized with ${this.baseUrl} using model ${this.modelName}`);
   }
 
@@ -180,6 +205,7 @@ CRITICAL: Return ONLY valid JSON. Do not wrap in markdown code blocks. Do not in
       const response = await this.fetcher(`${this.baseUrl}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        agent: this.httpsAgent,
         body: JSON.stringify({
           model: this.modelName,
           prompt: systemPrompt,
