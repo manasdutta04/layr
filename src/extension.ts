@@ -14,12 +14,81 @@ import { HistoryView } from './version-control/HistoryView';
 import { logger } from './utils/logger';
 
 /**
+ * Secure API key management using VS Code Secret Storage
+ */
+class SecureKeyManager {
+  private static readonly GEMINI_KEY = 'layr.geminiApiKey';
+  private static readonly GROQ_KEY = 'layr.groqApiKey';
+
+  constructor(private context: vscode.ExtensionContext) {}
+
+  /**
+   * Securely stores an API key in VS Code's secret storage (OS keychain)
+   */
+  async storeApiKey(provider: 'gemini' | 'groq', apiKey: string): Promise<void> {
+    const key = provider === 'gemini' ? SecureKeyManager.GEMINI_KEY : SecureKeyManager.GROQ_KEY;
+    await this.context.secrets.store(key, apiKey);
+    logger.info(`SecureKeyManager: API key stored securely for ${provider}`);
+  }
+
+  /**
+   * Retrieves API key from secure storage
+   */
+  async getApiKey(provider: 'gemini' | 'groq'): Promise<string | undefined> {
+    const key = provider === 'gemini' ? SecureKeyManager.GEMINI_KEY : SecureKeyManager.GROQ_KEY;
+    return await this.context.secrets.get(key);
+  }
+
+  /**
+   * Deletes API key from secure storage
+   */
+  async deleteApiKey(provider: 'gemini' | 'groq'): Promise<void> {
+    const key = provider === 'gemini' ? SecureKeyManager.GEMINI_KEY : SecureKeyManager.GROQ_KEY;
+    await this.context.secrets.delete(key);
+    logger.info(`SecureKeyManager: API key deleted for ${provider}`);
+  }
+
+  /**
+   * Migrates existing API keys from settings to secure storage
+   */
+  async migrateFromSettings(): Promise<void> {
+    const config = vscode.workspace.getConfiguration('layr');
+    const geminiKey = config.get<string>('geminiApiKey');
+
+    if (geminiKey && geminiKey !== 'your_api_key_here') {
+      logger.info('SecureKeyManager: Migrating Gemini API key to secure storage');
+      await this.storeApiKey('gemini', geminiKey);
+      
+      // Remove from settings after migration
+      await config.update('geminiApiKey', undefined, vscode.ConfigurationTarget.Global);
+      
+      vscode.window.showInformationMessage(
+        'Layr: API key has been migrated to secure storage for better protection.',
+        'Learn More'
+      ).then(action => {
+        if (action === 'Learn More') {
+          vscode.env.openExternal(vscode.Uri.parse('https://github.com/manasdutta04/layr#security'));
+        }
+      });
+    }
+  }
+}
+
+/**
  * This method is called when the extension is activated
  */
 export function activate(context: vscode.ExtensionContext) {
   // Initialize Managers
   const templateManager = new TemplateManager(context);
   const templateBrowser = new TemplateBrowser(context, templateManager);
+
+  // Initialize secure key manager
+  const keyManager = new SecureKeyManager(context);
+  
+  // Migrate existing API keys to secure storage
+  keyManager.migrateFromSettings().catch(error => {
+    logger.error('Failed to migrate API keys to secure storage:', error);
+  });
 
   logger.info('🚀 LAYR EXTENSION ACTIVATE FUNCTION CALLED! 🚀');
   logger.info('Layr Extension: ONLINE ONLY MODE ACTIVATED - Build ' + new Date().toISOString());
@@ -30,9 +99,11 @@ export function activate(context: vscode.ExtensionContext) {
   const envPath = path.join(extensionRoot, '.env');
   logger.debug('Layr: Extension root:', extensionRoot);
   logger.debug('Layr: Attempting to load .env from:', envPath);
-  logger.debug('Layr: .env file exists:', fs.existsSync(envPath));
 
+  // DEPRECATED: .env file loading is deprecated in favor of secure storage
+  // Kept for backward compatibility only
   if (fs.existsSync(envPath)) {
+    logger.warn('Layr: .env file usage is deprecated. Please migrate to secure storage via command palette.');
     try {
       // Load .env from extension directory
       const result = dotenv.config({ path: envPath });
@@ -69,6 +140,45 @@ export function activate(context: vscode.ExtensionContext) {
   // Refresh planner configuration after .env is loaded
   logger.info('Layr: Refreshing planner configuration after .env load');
   planner.refreshConfig();
+
+  // Register command to configure API key securely
+  const configureApiKeyCommand = vscode.commands.registerCommand('layr.configureApiKey', async () => {
+    const provider = await vscode.window.showQuickPick(['Gemini', 'Groq'], {
+      placeHolder: 'Select AI provider to configure'
+    });
+
+    if (!provider) { return; }
+
+    const apiKey = await vscode.window.showInputBox({
+      prompt: `Enter your ${provider} API key`,
+      password: true,
+      ignoreFocusOut: true,
+      validateInput: (value) => {
+        if (!value || value.trim().length === 0) {
+          return 'API key cannot be empty';
+        }
+        if (provider === 'Gemini' && !value.startsWith('AI')) {
+          return 'Gemini API keys should start with "AI"';
+        }
+        if (provider === 'Groq' && !value.startsWith('gsk_')) {
+          return 'Groq API keys should start with "gsk_"';
+        }
+        return null;
+      }
+    });
+
+    if (apiKey) {
+      await keyManager.storeApiKey(provider.toLowerCase() as 'gemini' | 'groq', apiKey);
+      vscode.window.showInformationMessage(
+        `${provider} API key saved securely. Reload window to apply changes.`,
+        'Reload Window'
+      ).then(action => {
+        if (action === 'Reload Window') {
+          vscode.commands.executeCommand('workbench.action.reloadWindow');
+        }
+      });
+    }
+  });
 
   // Register "Browse Templates" Command
   const browseTemplatesCommand = vscode.commands.registerCommand('layr.browseTemplates', () => {
@@ -163,6 +273,8 @@ export function activate(context: vscode.ExtensionContext) {
   // Register the "Create Plan" command
   const createPlanCommand = vscode.commands.registerCommand('layr.createPlan', async () => {
     try {
+      const MAX_PROMPT_LENGTH = 2000;
+      
       // Show input box to get user's prompt
       const prompt = await vscode.window.showInputBox({
         prompt: 'What do you want to build?',
@@ -174,6 +286,9 @@ export function activate(context: vscode.ExtensionContext) {
           }
           if (value.trim().length < 10) {
             return 'Please provide a more detailed description (at least 10 characters)';
+          }
+          if (value.trim().length > MAX_PROMPT_LENGTH) {
+            return `Prompt is too long (${value.trim().length} characters). Maximum ${MAX_PROMPT_LENGTH} characters allowed. Please be more concise.`;
           }
           return null;
         }
@@ -245,11 +360,39 @@ export function activate(context: vscode.ExtensionContext) {
 
         } catch (error) {
           logger.error('Plan generation error:', error);
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-          const action = 'Show Logs';
-          vscode.window.showErrorMessage(`Failed to generate plan: ${errorMessage}`, action).then(selected => {
+          
+          // Provide specific, actionable error messages
+          let errorMessage = 'Unknown error occurred';
+          let helpUrl = 'https://github.com/manasdutta04/layr#troubleshooting';
+          
+          if (error instanceof Error) {
+            const msg = error.message.toLowerCase();
+            
+            if (msg.includes('api key') || msg.includes('authentication')) {
+              errorMessage = 'API key configuration issue';
+              helpUrl = 'https://github.com/manasdutta04/layr#configuration';
+            } else if (msg.includes('network') || msg.includes('fetch') || msg.includes('econnrefused')) {
+              errorMessage = 'Network connection error. Please check your internet connection.';
+            } else if (msg.includes('rate limit')) {
+              errorMessage = 'API rate limit exceeded. Please wait a moment and try again.';
+            } else if (msg.includes('timeout')) {
+              errorMessage = 'Request timed out. Try again with a simpler project description.';
+            } else if (msg.includes('quota')) {
+              errorMessage = 'API quota exceeded. Check your API provider dashboard.';
+            } else {
+              errorMessage = error.message;
+            }
+          }
+          
+          const actions = ['Show Logs', 'Get Help', 'Dismiss'];
+          vscode.window.showErrorMessage(
+            `Failed to generate plan: ${errorMessage}`, 
+            ...actions
+          ).then(selected => {
             if (selected === action) {
               logger.show();
+            } else if (selected === 'Get Help') {
+              vscode.env.openExternal(vscode.Uri.parse(helpUrl));
             }
           });
         }
@@ -752,6 +895,7 @@ export function activate(context: vscode.ExtensionContext) {
     browseTemplatesCommand,
     saveAsTemplateCommand,
     copyLogsCommand,
+    configureApiKeyCommand,
     vscode.commands.registerCommand('layr.applyRefinement', async (uri: vscode.Uri) => {
       // If uri is not provided, try to get it from the active editor
       const targetUri = uri || vscode.window.activeTextEditor?.document.uri;
